@@ -1,3 +1,8 @@
+// 直接導出 Supabase 服務作為 dbService
+export { supabaseService as dbService } from './supabase'
+
+// 保留原本的 IndexedDB 程式碼註解，以備不時之需
+/*
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { Song } from '../types';
 
@@ -68,3 +73,4 @@ export const dbService = {
     await db.clear('songs');
   }
 };
+*/
