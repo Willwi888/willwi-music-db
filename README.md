@@ -26,7 +26,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1WSRBzhQ0sUd-5qPLnGHnOB
    ```env
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key-here
-   VITE_GEMINI_API_KEY=your-gemini-key-here  # Optional, for chat features
    ```
 
 4. Run the app:
@@ -100,7 +99,6 @@ In Google Cloud Run, configure the following environment variables:
 ```bash
 VITE_SUPABASE_URL=https://rzxqseimxhbokrhcdjbi.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_GEMINI_API_KEY=your_gemini_api_key  # Optional
 ```
 
 ### Deployment Command
@@ -110,7 +108,7 @@ gcloud run deploy willwi-db \
   --source . \
   --region us-west1 \
   --allow-unauthenticated \
-  --set-env-vars VITE_SUPABASE_URL=https://rzxqseimxhbokrhcdjbi.supabase.co,VITE_SUPABASE_ANON_KEY=your_key,VITE_GEMINI_API_KEY=your_key
+  --set-env-vars VITE_SUPABASE_URL=https://rzxqseimxhbokrhcdjbi.supabase.co,VITE_SUPABASE_ANON_KEY=your_key
 ```
 
 ## ✨ Features
@@ -119,23 +117,10 @@ gcloud run deploy willwi-db \
 - ✅ **Real-time Sync**: Admin updates reflect immediately on the website
 - ✅ **Self-hosted**: Full control over your music catalog
 - ✅ **Multi-language Support**: Support for multiple language catalogs
-- ✅ **AI Integration**: Optional Google Gemini AI for chat features
 
 ## 🔧 Technology Stack
 
 - **Frontend**: React 19 + TypeScript + Vite
 - **Database**: Supabase (PostgreSQL)
-- **AI**: Google Gemini (Optional)
 - **Deployment**: Google Cloud Run
-
-## 📝 Notes
-
-### Removing Google Gemini AI (Optional)
-
-If you want to completely remove the Gemini AI dependency:
-
-1. Delete `services/geminiService.ts`
-2. Remove `@google/genai` from `package.json`
-3. Remove chat-related UI components
-4. Remove `VITE_GEMINI_API_KEY` from environment variables
 
