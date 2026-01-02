@@ -1,33 +1,32 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Song } from '../types';
 
-// Database schema type for Supabase
-interface Database {
-  public: {
-    Tables: {
-      songs: {
-        Row: Song;
-        Insert: Song;
-        Update: Partial<Song>;
-      };
-    };
-  };
+// Extend ImportMeta interface for Vite environment variables
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_SUPABASE_URL?: string;
+    readonly VITE_SUPABASE_ANON_KEY?: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
 }
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-let supabaseClient: SupabaseClient<Database> | null = null;
+let supabaseClient: SupabaseClient | null = null;
 
-const getSupabaseClient = (): SupabaseClient<Database> | null => {
+const getSupabaseClient = (): SupabaseClient | null => {
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase credentials not configured. Operating in offline mode.');
     return null;
   }
 
   if (!supabaseClient) {
-    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     console.log('Supabase client initialized successfully');
   }
 
