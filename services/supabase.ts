@@ -214,15 +214,27 @@ export const supabaseService = {
         throw new Error('Supabase not configured');
       }
 
-      // Delete all rows from songs table
-      const { error } = await client
+      // Get all song IDs first, then delete them
+      const { data: songs, error: fetchError } = await client
         .from('songs')
-        .delete()
-        .neq('id', ''); // This will match all rows
+        .select('id');
 
-      if (error) {
-        console.error('Supabase clearAllSongs error:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Supabase clearAllSongs fetch error:', fetchError);
+        throw fetchError;
+      }
+
+      if (songs && songs.length > 0) {
+        const songIds = songs.map((song: { id: string }) => song.id);
+        const { error: deleteError } = await client
+          .from('songs')
+          .delete()
+          .in('id', songIds);
+
+        if (deleteError) {
+          console.error('Supabase clearAllSongs delete error:', deleteError);
+          throw deleteError;
+        }
       }
 
       console.log('Successfully cleared all songs from Supabase');

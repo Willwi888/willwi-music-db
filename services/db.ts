@@ -39,16 +39,18 @@ export const dbService = {
       const supabaseSongs = await supabaseService.getAllSongs();
       if (supabaseSongs.length > 0) {
         console.log('Fetched songs from Supabase');
-        // Sync to IndexedDB as backup
-        try {
-          const db = await initDB();
-          const tx = db.transaction('songs', 'readwrite');
-          await tx.store.clear();
-          await Promise.all(supabaseSongs.map(song => tx.store.put(song)));
-          await tx.done;
-        } catch (e) {
-          console.warn('Failed to sync Supabase data to IndexedDB:', e);
-        }
+        // Sync to IndexedDB as backup (background operation, don't block)
+        Promise.resolve().then(async () => {
+          try {
+            const db = await initDB();
+            const tx = db.transaction('songs', 'readwrite');
+            // Update each song individually to preserve existing data
+            await Promise.all(supabaseSongs.map(song => tx.store.put(song)));
+            await tx.done;
+          } catch (e) {
+            console.warn('Failed to sync Supabase data to IndexedDB:', e);
+          }
+        });
         return supabaseSongs;
       }
     } catch (error) {
