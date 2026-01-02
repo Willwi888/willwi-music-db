@@ -116,10 +116,12 @@ export const supabaseService = {
   // 清空所有歌曲
   async clearAllSongs(): Promise<void> {
     try {
+      // Delete all songs - using neq with impossible UUID to match all rows
+      // This is a workaround since Supabase requires a filter condition
       const { error } = await supabase
         .from('songs')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000')
+        .neq('id', '00000000-0000-0000-0000-000000000000') // Dummy UUID to match all rows
       
       if (error) throw error
       console.log('✅ 成功清空資料庫')
@@ -130,7 +132,11 @@ export const supabaseService = {
   },
 
   // 🔥 即時訂閱資料變化（可選功能）
-  subscribeToSongs(callback: (payload: any) => void) {
+  subscribeToSongs(callback: (payload: { 
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    new: Song | null;
+    old: Song | null;
+  }) => void) {
     console.log('🔔 開始監聽 Supabase 即時更新')
     return supabase
       .channel('songs_changes')
@@ -138,7 +144,11 @@ export const supabaseService = {
         { event: '*', schema: 'public', table: 'songs' },
         (payload) => {
           console.log('🔔 資料庫更新！', payload)
-          callback(payload)
+          callback({
+            eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
+            new: payload.new as Song | null,
+            old: payload.old as Song | null
+          })
         }
       )
       .subscribe()
