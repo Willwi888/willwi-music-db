@@ -35,7 +35,7 @@ const getSupabaseClient = (): SupabaseClient | null => {
 
 // Check if Supabase is configured
 export const isSupabaseConfigured = (): boolean => {
-  return !!(supabaseUrl && supabaseAnonKey);
+  return getSupabaseClient() !== null;
 };
 
 export const supabaseService = {
@@ -271,7 +271,10 @@ export const supabaseService = {
           async () => {
             // Fetch updated data when any change occurs
             const songs = await supabaseService.getAllSongs();
-            callback(songs);
+            // Only call callback if we got data (not null)
+            if (songs !== null) {
+              callback(songs);
+            }
           }
         )
         .subscribe();
