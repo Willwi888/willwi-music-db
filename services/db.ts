@@ -12,9 +12,9 @@ interface WillwiDB extends DBSchema {
 const DB_NAME = 'willwi-music-db';
 const DB_VERSION = 1;
 
-let dbPromise: Promise<IDBPDatabase<WillwiDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<WillwiDB>> | undefined;
 
-const DEBUG = true; // Set to true for development debugging
+const DEBUG = import.meta.env.DEV; // Enable debug logging in development mode only
 
 const log = (...args: any[]) => {
   if (DEBUG) {
@@ -48,7 +48,7 @@ export const initDB = async () => {
       return db;
     } catch (error) {
       console.error('[DB Service] Failed to initialize IndexedDB:', error);
-      dbPromise = null; // Reset promise so it can be retried
+      dbPromise = undefined; // Reset promise so it can be retried
       throw error;
     }
   }

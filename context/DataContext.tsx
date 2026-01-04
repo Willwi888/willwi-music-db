@@ -10,7 +10,7 @@ interface ExtendedSongContextType extends SongContextType {
 const DataContext = createContext<ExtendedSongContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'willwi_music_db_v1';
-const DEBUG = true; // Set to true for development debugging
+const DEBUG = import.meta.env.DEV; // Enable debug logging in development mode only
 
 const log = (...args: any[]) => {
   if (DEBUG) {
