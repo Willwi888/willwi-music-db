@@ -2,9 +2,21 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Song, Language, ProjectType, SongContextType } from '../types';
 import { dbService } from '../services/db';
 
-const DataContext = createContext<SongContextType | undefined>(undefined);
+interface ExtendedSongContextType extends SongContextType {
+  isLoading: boolean;
+  error: string | null;
+}
+
+const DataContext = createContext<ExtendedSongContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'willwi_music_db_v1';
+const DEBUG = true; // Set to true for development debugging
+
+const log = (...args: any[]) => {
+  if (DEBUG) {
+    console.log('[DataContext]', ...args);
+  }
+};
 
 // Initial sample data if DB is completely empty and no local storage found
 const INITIAL_DATA: Song[] = [
@@ -46,50 +58,99 @@ const INITIAL_DATA: Song[] = [
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [songs, setSongs] = useState<Song[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize DB and Load Data
   useEffect(() => {
     const initData = async () => {
+      log('Starting data initialization...');
+      setIsLoading(true);
+      setError(null);
+
       try {
         // 1. Try to fetch from IndexedDB
-        let dbSongs = await dbService.getAllSongs();
+        log('Step 1: Attempting to fetch songs from IndexedDB...');
+        let dbSongs: Song[] = [];
+        
+        try {
+          dbSongs = await dbService.getAllSongs();
+          log(`Successfully retrieved ${dbSongs.length} songs from IndexedDB`);
+        } catch (dbError) {
+          console.error('[DataContext] IndexedDB fetch failed:', dbError);
+          log('IndexedDB is not available or blocked, will use fallback data');
+          // Continue with empty array - will trigger migration or initial data
+        }
 
         // 2. Check for migration: If DB is empty but LocalStorage has data
         if (dbSongs.length === 0) {
-           const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-           if (localData) {
-             try {
-               console.log("Migrating data from LocalStorage to IndexedDB...");
-               const parsedLocal: Song[] = JSON.parse(localData);
-               if (parsedLocal.length > 0) {
-                 await dbService.bulkAdd(parsedLocal);
-                 dbSongs = await dbService.getAllSongs();
-                 // Optional: Clear local storage after successful migration
-                 // localStorage.removeItem(LOCAL_STORAGE_KEY); 
-               }
-             } catch (e) {
-               console.error("Migration failed:", e);
-             }
-           } else {
-             // 3. If completely new, load initial sample data
-             console.log("Initializing with sample data...");
-             await dbService.bulkAdd(INITIAL_DATA);
-             dbSongs = INITIAL_DATA;
-           }
+          log('Step 2: Database is empty, checking LocalStorage for migration...');
+          const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          
+          if (localData) {
+            try {
+              log("Found LocalStorage data, attempting migration...");
+              const parsedLocal: Song[] = JSON.parse(localData);
+              
+              if (parsedLocal.length > 0) {
+                log(`Migrating ${parsedLocal.length} songs from LocalStorage...`);
+                
+                try {
+                  await dbService.bulkAdd(parsedLocal);
+                  dbSongs = await dbService.getAllSongs();
+                  log('Migration successful!');
+                } catch (migrationError) {
+                  console.error('[DataContext] Migration to IndexedDB failed:', migrationError);
+                  log('Using LocalStorage data directly as fallback');
+                  dbSongs = parsedLocal; // Use parsed data directly if DB fails
+                }
+                
+                // Optional: Clear local storage after successful migration
+                // localStorage.removeItem(LOCAL_STORAGE_KEY);
+              }
+            } catch (parseError) {
+              console.error('[DataContext] Failed to parse LocalStorage data:', parseError);
+              log('LocalStorage data is corrupted, will use initial sample data');
+            }
+          }
+          
+          // 3. If completely new, load initial sample data
+          if (dbSongs.length === 0) {
+            log("Step 3: No existing data found, initializing with sample data...");
+            
+            try {
+              await dbService.bulkAdd(INITIAL_DATA);
+              dbSongs = await dbService.getAllSongs();
+              log('Sample data successfully added to IndexedDB');
+            } catch (bulkAddError) {
+              console.error('[DataContext] Failed to add sample data to IndexedDB:', bulkAddError);
+              log('Using sample data in memory only');
+              dbSongs = INITIAL_DATA; // Use initial data directly if DB fails
+            }
+          }
         }
 
         // Sort by date descending
+        log('Sorting songs by release date...');
         const sorted = dbSongs.sort((a, b) => 
-            new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+          new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
         );
+        
         setSongs(sorted);
+        log(`✓ Initialization complete! ${sorted.length} songs loaded.`);
+        
       } catch (err) {
-        console.error("Failed to initialize database:", err);
-        // Fallback to memory only if DB fails
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[DataContext] Critical initialization error:', err);
+        setError(errorMessage);
+        
+        // Fallback to memory-only initial data
+        log('⚠ Using fallback: Loading initial data in memory only');
         setSongs(INITIAL_DATA);
+        
       } finally {
-        setIsLoaded(true);
+        setIsLoading(false);
+        log('Data initialization finished');
       }
     };
 
@@ -140,7 +201,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const getSong = (id: string) => songs.find(s => s.id === id);
 
   return (
-    <DataContext.Provider value={{ songs, addSong, updateSong, deleteSong, getSong }}>
+    <DataContext.Provider value={{ songs, addSong, updateSong, deleteSong, getSong, isLoading, error }}>
       {children}
     </DataContext.Provider>
   );
