@@ -37,8 +37,14 @@ export const dbService = {
     try {
       // Try Supabase first
       const supabaseSongs = await supabaseService.getAllSongs();
-      if (supabaseSongs.length > 0) {
-        console.log('Fetched songs from Supabase');
+      
+      // null means Supabase is not configured, so use IndexedDB
+      if (supabaseSongs === null) {
+        console.log('Supabase not configured, using IndexedDB');
+      } else {
+        // Supabase is configured, use its data (even if empty)
+        console.log(`Fetched ${supabaseSongs.length} songs from Supabase`);
+        
         // Sync to IndexedDB as backup (background operation, don't block)
         Promise.resolve().then(async () => {
           try {
@@ -51,6 +57,7 @@ export const dbService = {
             console.warn('Failed to sync Supabase data to IndexedDB:', e);
           }
         });
+        
         return supabaseSongs;
       }
     } catch (error) {

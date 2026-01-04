@@ -33,16 +33,22 @@ const getSupabaseClient = (): SupabaseClient | null => {
   return supabaseClient;
 };
 
+// Check if Supabase is configured
+export const isSupabaseConfigured = (): boolean => {
+  return !!(supabaseUrl && supabaseAnonKey);
+};
+
 export const supabaseService = {
   /**
    * Get all songs from Supabase, sorted by releaseDate descending
+   * Returns null if Supabase is not configured (to distinguish from empty array)
    */
-  async getAllSongs(): Promise<Song[]> {
+  async getAllSongs(): Promise<Song[] | null> {
     try {
       const client = getSupabaseClient();
       if (!client) {
         console.log('Supabase not configured, skipping getAllSongs');
-        return [];
+        return null;
       }
 
       const { data, error } = await client
@@ -59,7 +65,7 @@ export const supabaseService = {
       return data || [];
     } catch (error) {
       console.error('Failed to get all songs from Supabase:', error);
-      return [];
+      throw error;
     }
   },
 
