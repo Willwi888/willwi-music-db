@@ -8,27 +8,9 @@ import { useTranslation } from '../context/LanguageContext';
 const ARTIST_HERO_IMAGE = "https://p17.zdusercontent.com/attachment/572742/nGBWtmpTNA1gAhYLblesSXoiZ?token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..DuNguqol2WAk3WiKEt2srw.Mbfpe6C7F0kNE5DFsRseRfcLpnmsFIJX6bbXNEIUD8vwVC42QZeqW2_-5mxN3DnaFJZ_jmssgO1yGm440mPn2JGjfN6LCYLEKR3XZl4w9DnHsnClS3IbVUkRZWlmhMaxWj3TI3K6hz-1ZSVYRSLDVZxMLLIzrC5X_6o_4E--8wu1cRwuPTlOef1AEgDS5ynUn4Dy7MS7sgZmhiw3Vcu1jxnIKwdnIZJm1VaZf9_9EXwmxDISSDzzZFp5J3sSW9D1vKO8oM8hzB-CXggM0R44sHQutGNCcKc5pt2F9UZSVfw.1y_aP3hPN5ziOiWi6Kf9hw"; 
 
 const Home: React.FC = () => {
-  const { songs, isLoading, error } = useData();
+  const { songs } = useData();
   const { t } = useTranslation();
   const featured = songs.find(s => s.isEditorPick) || songs[0];
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-brand-darker">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-brand-accent border-t-transparent mb-4"></div>
-          <p className="text-white text-xl font-medium">Loading music database...</p>
-          <p className="text-slate-400 text-sm mt-2">Initializing data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state - but still show content with warning
-  if (error) {
-    console.warn('[Home] Data initialization warning:', error);
-  }
 
   return (
     <div className="flex flex-col">
