@@ -150,7 +150,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </div>
         <div className="bg-black py-2 text-center">
-            <p className="text-[10px] text-slate-800 font-mono tracking-widest uppercase">Powered by Willwi & Gemini</p>
+            <p className="text-[10px] text-slate-800 font-mono tracking-widest uppercase">Powered by Willwi & Supabase</p>
         </div>
       </footer>
     </div>
