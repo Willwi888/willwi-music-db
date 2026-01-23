@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { getLanguageColor } from '../types';
 import { useTranslation } from '../context/LanguageContext';
 import PricingCards from '../components/PricingCards';
+import OfficialPlatforms from '../components/OfficialPlatforms';
 
 // Willwi Official Hero Image - 2026 形象照
 const ARTIST_HERO_IMAGE = "/images/hero-bg.jpg";
@@ -243,7 +244,10 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. 認證與精選 */}
+      {/* 3. Official Platforms - 官方認證平台 */}
+      <OfficialPlatforms />
+
+      {/* 4. 認證與精選 */}
       <div className="bg-brand-darker py-28 px-6 lg:px-8 border-t border-slate-900">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">

@@ -7,15 +7,18 @@ import { Song } from '../types';
 const AdminDashboard: React.FC = () => {
   const { songs } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrCodeInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
+  const [linePayQRCode, setLinePayQRCode] = useState<string>(localStorage.getItem('linePayQRCode') || '');
+  const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
 
   // Project Links provided by user
   const PROJECT_LINKS = {
       drive: 'https://drive.google.com/drive/folders/1PmP_GB7etr45T_DwcZcLt45Om2RDqTNI?usp=drive_link',
       supabase: 'https://supabase.com/dashboard/project/rzxqseimxhbokrhcdjbi',
       vercel: 'https://vercel.com/willwi',
-      live: 'https://willwi-music-manager-467949320732.us-west1.run.app/#/'
+      live: 'https://willwi-music-db.vercel.app'
   };
 
   // 1. Calculate Catalog Health
@@ -102,6 +105,32 @@ const AdminDashboard: React.FC = () => {
       window.open(PROJECT_LINKS.drive, '_blank');
   };
 
+  // --- LINE Pay QR Code Functions ---
+  const handleQRCodeUpload = () => {
+    qrCodeInputRef.current?.click();
+  };
+
+  const handleQRCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setQrCodePreview(dataUrl);
+      setLinePayQRCode(dataUrl);
+      localStorage.setItem('linePayQRCode', dataUrl);
+      alert('LINE Pay QR Code 已更新！');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleQRCodeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setLinePayQRCode(url);
+    localStorage.setItem('linePayQRCode', url);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -184,7 +213,124 @@ const AdminDashboard: React.FC = () => {
                  {restoreStatus && <p className="mt-2 text-brand-gold font-mono text-xs text-right">{restoreStatus}</p>}
             </div>
 
-             {/* 2. INFRASTRUCTURE & DEPLOYMENT */}
+            {/* 2. PAYMENT & QR CODE MANAGEMENT */}
+            <div className="bg-gradient-to-r from-green-900/20 to-slate-900 border border-green-700/30 rounded-xl p-8 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-green-500 text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl shadow-lg uppercase tracking-wider">PAYMENT</div>
+                
+                <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+                    💳 Payment & QR Code
+                </h2>
+                <p className="text-slate-300 text-sm mb-6 max-w-lg leading-relaxed">
+                    管理您的付款方式。上傳 LINE Pay QR Code 讓用戶可以透過 LINE Pay 支持您。
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* LINE Pay QR Code Upload */}
+                    <div className="space-y-4">
+                        <h3 className="text-white font-bold flex items-center gap-2">
+                            <span className="text-green-400">LINE</span> Pay QR Code
+                        </h3>
+                        
+                        <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+                            {(qrCodePreview || linePayQRCode) ? (
+                                <div className="text-center">
+                                    <img 
+                                        src={qrCodePreview || linePayQRCode} 
+                                        alt="LINE Pay QR Code" 
+                                        className="w-40 h-40 mx-auto rounded-lg border border-slate-700 object-contain bg-white p-2"
+                                    />
+                                    <p className="text-xs text-green-400 mt-2">✓ QR Code 已設定</p>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <div className="w-20 h-20 mx-auto bg-slate-800 rounded-lg flex items-center justify-center mb-3">
+                                        <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-slate-500 text-xs">尚未設定 QR Code</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <button 
+                            onClick={handleQRCodeUpload}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition-all"
+                        >
+                            📤 上傳 LINE Pay QR Code
+                        </button>
+                        <input 
+                            type="file" 
+                            ref={qrCodeInputRef} 
+                            onChange={handleQRCodeChange} 
+                            accept="image/*" 
+                            className="hidden" 
+                        />
+
+                        <div className="text-xs text-slate-500">
+                            或貼上圖片網址：
+                        </div>
+                        <input 
+                            type="text"
+                            value={linePayQRCode}
+                            onChange={handleQRCodeUrlChange}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:border-green-500 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Payment Status */}
+                    <div className="space-y-4">
+                        <h3 className="text-white font-bold">付款方式狀態</h3>
+                        
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold">S</span>
+                                    </div>
+                                    <span className="text-white text-sm">Stripe</span>
+                                </div>
+                                <span className="text-xs px-2 py-1 rounded bg-yellow-900/30 text-yellow-400 border border-yellow-900/50">
+                                    待設定
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-[#0070ba] rounded flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold">P</span>
+                                    </div>
+                                    <span className="text-white text-sm">PayPal</span>
+                                </div>
+                                <span className="text-xs px-2 py-1 rounded bg-green-900/30 text-green-400 border border-green-900/50">
+                                    ✓ 已啟用
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold">L</span>
+                                    </div>
+                                    <span className="text-white text-sm">LINE Pay</span>
+                                </div>
+                                <span className={`text-xs px-2 py-1 rounded ${linePayQRCode ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-400 border-yellow-900/50'} border`}>
+                                    {linePayQRCode ? '✓ 已設定' : '待上傳 QR'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                                <strong className="text-brand-gold">提示：</strong> Stripe 需要在 Vercel 環境變數中設定 <code className="bg-black px-1 rounded text-green-400">STRIPE_SECRET_KEY</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             {/* 3. INFRASTRUCTURE & DEPLOYMENT */}
              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     🏗️ Project Infrastructure
@@ -243,7 +389,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* 3. Health Check */}
+            {/* 4. Health Check */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     💿 Catalog Health Check
