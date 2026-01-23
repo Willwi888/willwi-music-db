@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
 import { PRODUCTS, ProductId, redirectToCheckout } from '../services/stripeService';
 import { useTranslation } from '../context/LanguageContext';
-import { PAYPAL_BUTTONS } from '../constants/payment';
 
-// PayPal 付款連結
-const getPayPalLink = (productId: ProductId): string => {
-  const buttonId = PAYPAL_BUTTONS[productId];
-  if (buttonId) {
-    return `https://www.paypal.com/ncp/payment/${buttonId}`;
-  }
-  return '#';
-};
 
 const PricingCards: React.FC = () => {
   const { language } = useTranslation();
