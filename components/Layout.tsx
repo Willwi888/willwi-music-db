@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
+import { isAdminLoggedIn } from '../services/adminService';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -9,6 +10,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // Check if we are on home page for transparent nav
   const isHome = location.pathname === '/';
+  
+  // Check admin status
+  const isAdmin = isAdminLoggedIn();
 
   const isActive = (path: string) => location.pathname === path 
     ? "text-brand-accent font-bold" 
@@ -41,9 +45,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <Link to="/interactive" className={`${location.pathname === '/interactive' ? 'text-brand-gold font-bold' : 'text-slate-400 hover:text-brand-gold transition-colors font-medium'}`}>
                   {t('nav_interactive')}
                 </Link>
-                <Link to="/add" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-brand-accent hover:text-brand-darker hover:border-brand-accent transition-all text-sm font-bold tracking-wide">
-                  + {t('nav_add')}
-                </Link>
+                
+                {/* 根據管理員狀態顯示不同按鈕 */}
+                {isAdmin ? (
+                  <Link to="/add" className="px-4 py-1.5 rounded-full bg-brand-accent text-brand-darker border border-brand-accent hover:bg-sky-400 transition-all text-sm font-bold tracking-wide">
+                    + {t('nav_add')}
+                  </Link>
+                ) : (
+                  <Link to="/admin" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-sm font-bold tracking-wide">
+                    🔐 Manager
+                  </Link>
+                )}
               </div>
 
               {/* Language Switcher */}
@@ -92,9 +104,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link to="/" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/')}>{t('nav_home')}</Link>
               <Link to="/database" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/database')}>{t('nav_catalog')}</Link>
               <Link to="/interactive" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/interactive')}>{t('nav_interactive')}</Link>
-              <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
-                + {t('nav_add')}
-              </Link>
+              
+              {/* 根據管理員狀態顯示不同按鈕 */}
+              {isAdmin ? (
+                <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
+                  + {t('nav_add')}
+                </Link>
+              ) : (
+                <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-white bg-slate-700 mt-4 text-center">
+                  🔐 Manager
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -145,7 +165,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <span className="hidden md:inline text-slate-700">|</span>
                 <a href="https://musicbrainz.org/artist/526cc0f8-da20-4d2d-86a5-4bf841a6ba3c" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">MusicBrainz</a>
                 <a href="https://www.musixmatch.com/artist/Willwi" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Musixmatch</a>
-                <Link to="/admin" className="hover:text-white transition-colors text-slate-700">Admin</Link>
               </div>
           </div>
         </div>
