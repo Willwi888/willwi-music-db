@@ -7,6 +7,8 @@ import AddSong from './pages/AddSong';
 import SongDetail from './pages/SongDetail';
 import Interactive from './pages/Interactive';
 import AdminDashboard from './pages/AdminDashboard';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
 import { DataProvider } from './context/DataContext';
 import { UserProvider } from './context/UserContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -25,6 +27,8 @@ const App: React.FC = () => {
                   <Route path="/song/:id" element={<SongDetail />} />
                   <Route path="/interactive" element={<Interactive />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/payment-cancel" element={<PaymentCancel />} />
                   </Routes>
               </Layout>
               </HashRouter>
