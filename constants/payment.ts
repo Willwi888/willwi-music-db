@@ -83,5 +83,12 @@ export const PAYMENT_PLANS = {
 export const getPayPalSDKUrl = () => 
   `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=TWD`;
 
+// PayPal Button IDs mapping
+export const PAYPAL_BUTTONS: Record<string, string> = {
+  support: '8NQSNPLPBVS5L',
+  resonance: 'UZU4M39WRFN5N',
+  cinema: 'CD27A99GZHXV4'
+};
+
 // LINE Pay QR Code (can be updated from admin)
 export const LINE_PAY_QR_KEY = 'linepay_qr_url';
