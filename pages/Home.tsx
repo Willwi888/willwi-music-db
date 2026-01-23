@@ -155,7 +155,6 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { num: '01', title: isEn ? 'Choose' : '選擇', desc: isEn ? 'Select your support tier' : '選擇您的支持方式' },
-                { num: '02', title: isEn ? 'Pay' : '付款', desc: isEn ? 'Secure payment via Stripe' : '透過 Stripe 安全付款' },
                 { num: '03', title: isEn ? 'Experience' : '體驗', desc: isEn ? 'Walk through the song' : '陪這首歌走一段' }
               ].map((step, idx) => (
                 <div key={idx} className="group bg-slate-900/40 hover:bg-slate-900/60 rounded-xl p-6 border border-slate-800 hover:border-brand-gold/30 transition-all duration-500 text-center">
