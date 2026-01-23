@@ -7,6 +7,7 @@ import AddSong from './pages/AddSong';
 import SongDetail from './pages/SongDetail';
 import Interactive from './pages/Interactive';
 import AdminDashboard from './pages/AdminDashboard';
+import LyricsPlayer from './pages/LyricsPlayer';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
 import { DataProvider } from './context/DataContext';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-cancel" element={<PaymentCancel />} />
+                  <Route path="/lyrics/:id" element={<LyricsPlayer />} />
                   </Routes>
               </Layout>
               </HashRouter>
