@@ -1,17 +1,53 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import { dbService } from '../services/db';
 import { Song } from '../types';
+import { isAdminLoggedIn, adminLogin, adminLogout } from '../services/adminService';
 
 const AdminDashboard: React.FC = () => {
-  const { songs } = useData();
+  const { songs, refreshSongs } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrCodeInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
   const [linePayQRCode, setLinePayQRCode] = useState<string>(localStorage.getItem('linePayQRCode') || '');
   const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
+  
+  // 密碼驗證狀態
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isChecking, setIsChecking] = useState(true);
+
+  // 檢查登入狀態
+  useEffect(() => {
+    const checkAuth = () => {
+      const loggedIn = isAdminLoggedIn();
+      setIsAuthenticated(loggedIn);
+      setIsChecking(false);
+    };
+    checkAuth();
+  }, []);
+
+  // 處理登入
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminLogin(password)) {
+      setIsAuthenticated(true);
+      setLoginError('');
+      setPassword('');
+    } else {
+      setLoginError('密碼錯誤');
+      setPassword('');
+    }
+  };
+
+  // 處理登出
+  const handleLogout = () => {
+    adminLogout();
+    setIsAuthenticated(false);
+  };
 
   // Project Links provided by user
   const PROJECT_LINKS = {
@@ -29,9 +65,9 @@ const AdminDashboard: React.FC = () => {
 
   // 2. Mock Data for "Business Intelligence"
   const mockRevenue = {
-    dailyRevenueUSD: 500, // Approx $500 USD/day
+    dailyRevenueUSD: 500,
     dailyRevenueNTD: 16000, 
-    hearts: 4500, // The 4500 hearts milestone
+    hearts: 4500,
     downloads: 128
   };
 
@@ -87,6 +123,12 @@ const AdminDashboard: React.FC = () => {
               await dbService.bulkAdd(parsedSongs);
 
               setRestoreStatus('Success! Reloading...');
+              
+              // Refresh data
+              if (refreshSongs) {
+                await refreshSongs();
+              }
+              
               setTimeout(() => {
                   window.location.reload();
               }, 1000);
@@ -131,6 +173,66 @@ const AdminDashboard: React.FC = () => {
     localStorage.setItem('linePayQRCode', url);
   };
 
+  // 載入中畫面
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-brand-darker flex items-center justify-center">
+        <div className="text-white">驗證中...</div>
+      </div>
+    );
+  }
+
+  // 未登入 - 顯示密碼輸入畫面
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-brand-darker flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+            {/* Logo */}
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-brand-gold/10 flex items-center justify-center border border-brand-gold/30">
+                <span className="text-4xl">🔐</span>
+              </div>
+              <h1 className="text-2xl font-bold text-white">Manager Dashboard</h1>
+              <p className="text-slate-400 text-sm mt-2">請輸入管理員密碼</p>
+            </div>
+
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="輸入密碼"
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-center text-lg tracking-widest"
+                  autoFocus
+                />
+                {loginError && (
+                  <p className="mt-2 text-red-400 text-sm text-center">{loginError}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-brand-gold text-black font-bold rounded-lg hover:bg-brand-gold/90 transition-colors"
+              >
+                進入後台
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Link to="/" className="text-slate-500 text-sm hover:text-white transition-colors">
+                ← 返回首頁
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 已登入 - 顯示後台
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -138,9 +240,17 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Manager Dashboard</h1>
             <p className="text-slate-400 text-sm mt-1">Willwi's Legacy Archive & Performance</p>
           </div>
-          <div className="flex items-center gap-2">
-             <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse shadow-[0_0_10px_#38bdf8]"></span>
-             <span className="text-xs text-brand-accent font-mono uppercase font-bold">Virtual Manager: Active</span>
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+               <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse shadow-[0_0_10px_#38bdf8]"></span>
+               <span className="text-xs text-brand-accent font-mono uppercase font-bold">Virtual Manager: Active</span>
+             </div>
+             <button
+               onClick={handleLogout}
+               className="px-3 py-1 text-xs text-slate-400 hover:text-white border border-slate-700 rounded hover:bg-slate-800 transition-colors"
+             >
+               登出
+             </button>
           </div>
       </div>
 
@@ -233,265 +343,152 @@ const AdminDashboard: React.FC = () => {
                         
                         <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
                             {(qrCodePreview || linePayQRCode) ? (
-                                <div className="text-center">
+                                <div className="space-y-3">
                                     <img 
                                         src={qrCodePreview || linePayQRCode} 
                                         alt="LINE Pay QR Code" 
-                                        className="w-40 h-40 mx-auto rounded-lg border border-slate-700 object-contain bg-white p-2"
+                                        className="w-full max-w-[200px] mx-auto rounded-lg"
                                     />
-                                    <p className="text-xs text-green-400 mt-2">✓ QR Code 已設定</p>
+                                    <button
+                                        onClick={handleQRCodeUpload}
+                                        className="w-full py-2 text-xs text-slate-400 hover:text-white border border-slate-700 rounded hover:bg-slate-800 transition-colors"
+                                    >
+                                        更換 QR Code
+                                    </button>
                                 </div>
                             ) : (
-                                <div className="text-center py-8">
-                                    <div className="w-20 h-20 mx-auto bg-slate-800 rounded-lg flex items-center justify-center mb-3">
-                                        <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-slate-500 text-xs">尚未設定 QR Code</p>
-                                </div>
+                                <button
+                                    onClick={handleQRCodeUpload}
+                                    className="w-full py-8 border-2 border-dashed border-slate-700 rounded-lg text-slate-500 hover:text-white hover:border-green-500 transition-colors"
+                                >
+                                    <div className="text-3xl mb-2">📷</div>
+                                    <div className="text-sm">點擊上傳 QR Code</div>
+                                </button>
                             )}
+                            <input 
+                                type="file" 
+                                ref={qrCodeInputRef} 
+                                onChange={handleQRCodeChange} 
+                                accept="image/*" 
+                                className="hidden" 
+                            />
                         </div>
-
-                        <button 
-                            onClick={handleQRCodeUpload}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition-all"
-                        >
-                            📤 上傳 LINE Pay QR Code
-                        </button>
-                        <input 
-                            type="file" 
-                            ref={qrCodeInputRef} 
-                            onChange={handleQRCodeChange} 
-                            accept="image/*" 
-                            className="hidden" 
-                        />
 
                         <div className="text-xs text-slate-500">
-                            或貼上圖片網址：
+                            或貼上 QR Code 網址：
                         </div>
-                        <input 
+                        <input
                             type="text"
-                            value={linePayQRCode}
+                            value={linePayQRCode.startsWith('data:') ? '' : linePayQRCode}
                             onChange={handleQRCodeUrlChange}
                             placeholder="https://..."
-                            className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:border-green-500 focus:outline-none"
+                            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-sm text-white placeholder-slate-500 focus:outline-none focus:border-green-500"
                         />
                     </div>
 
                     {/* Payment Status */}
                     <div className="space-y-4">
                         <h3 className="text-white font-bold">付款方式狀態</h3>
-                        
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center">
-                                        <span className="text-white text-xs font-bold">S</span>
-                                    </div>
-                                    <span className="text-white text-sm">Stripe</span>
-                                </div>
-                                <span className="text-xs px-2 py-1 rounded bg-yellow-900/30 text-yellow-400 border border-yellow-900/50">
-                                    待設定
+                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <span className="text-slate-300 text-sm">Stripe</span>
+                                <span className="text-xs px-2 py-1 bg-yellow-900/50 text-yellow-400 rounded">待設定</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <span className="text-slate-300 text-sm">PayPal</span>
+                                <span className="text-xs px-2 py-1 bg-green-900/50 text-green-400 rounded">已啟用</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <span className="text-slate-300 text-sm">LINE Pay</span>
+                                <span className={`text-xs px-2 py-1 rounded ${linePayQRCode ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                                    {linePayQRCode ? '已設定' : '未設定'}
                                 </span>
                             </div>
-
-                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-[#0070ba] rounded flex items-center justify-center">
-                                        <span className="text-white text-xs font-bold">P</span>
-                                    </div>
-                                    <span className="text-white text-sm">PayPal</span>
-                                </div>
-                                <span className="text-xs px-2 py-1 rounded bg-green-900/30 text-green-400 border border-green-900/50">
-                                    ✓ 已啟用
-                                </span>
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
-                                        <span className="text-white text-xs font-bold">L</span>
-                                    </div>
-                                    <span className="text-white text-sm">LINE Pay</span>
-                                </div>
-                                <span className={`text-xs px-2 py-1 rounded ${linePayQRCode ? 'bg-green-900/30 text-green-400 border-green-900/50' : 'bg-yellow-900/30 text-yellow-400 border-yellow-900/50'} border`}>
-                                    {linePayQRCode ? '✓ 已設定' : '待上傳 QR'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-lg">
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                                <strong className="text-brand-gold">提示：</strong> Stripe 需要在 Vercel 環境變數中設定 <code className="bg-black px-1 rounded text-green-400">STRIPE_SECRET_KEY</code>
-                            </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-             {/* 3. INFRASTRUCTURE & DEPLOYMENT */}
-             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    🏗️ Project Infrastructure
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <a 
-                        href={PROJECT_LINKS.live} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="block p-4 bg-slate-950 border border-slate-800 hover:border-brand-accent rounded-lg group transition-all"
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-white font-bold">Live Website</span>
-                            <span className="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1 rounded border border-brand-accent/50">ACTIVE</span>
-                        </div>
-                        <p className="text-xs text-slate-500 group-hover:text-slate-300">View current application.</p>
-                    </a>
-
-                    <a 
-                        href={PROJECT_LINKS.vercel} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="block p-4 bg-slate-950 border border-slate-800 hover:border-white rounded-lg group transition-all"
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-white font-bold">Vercel Dashboard</span>
-                            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">HOSTING</span>
-                        </div>
-                        <p className="text-xs text-slate-500 group-hover:text-slate-300">Manage deployments.</p>
-                    </a>
-
-                    <a 
-                        href={PROJECT_LINKS.supabase} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="block p-4 bg-slate-950 border border-slate-800 hover:border-green-500 rounded-lg group transition-all"
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-white font-bold">Supabase</span>
-                            <span className="text-[10px] bg-green-900/20 text-green-400 px-2 py-1 rounded border border-green-900/50">DB</span>
-                        </div>
-                        <p className="text-xs text-slate-500 group-hover:text-slate-300">Manage database.</p>
-                    </a>
+            {/* 3. CATALOG HEALTH */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+                <h2 className="text-lg font-bold text-white mb-4">📊 Catalog Health</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-brand-accent">{totalSongs}</div>
+                        <div className="text-xs text-slate-400 uppercase">Total Songs</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-yellow-400">{missingISRC}</div>
+                        <div className="text-xs text-slate-400 uppercase">Missing ISRC</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-400">{missingLyrics}</div>
+                        <div className="text-xs text-slate-400 uppercase">Missing Lyrics</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-green-400">{hasMusicBrainz}</div>
+                        <div className="text-xs text-slate-400 uppercase">MusicBrainz</div>
+                    </div>
                 </div>
-                
-                <div className="mt-6 pt-4 border-t border-slate-800">
-                    <h3 className="text-brand-accent font-bold text-sm uppercase mb-2">Carrd Integration Guide</h3>
-                    <p className="text-slate-400 text-xs leading-relaxed">
-                        1. 您的網站目前運行於：<br/>
-                        <code className="bg-black px-2 py-1 rounded text-green-400 mt-1 block w-fit truncate max-w-full">{PROJECT_LINKS.live}</code>
-                        <br/>
-                        2. 在 Carrd 上建立一個按鈕，命名為 <strong>"Enter Database"</strong>。
-                        <br/>
-                        3. 將上述網址貼上。這樣 Carrd 就是您的「門面」，而這裡是您的「工作室」。
-                    </p>
+                <div className="mt-4 flex justify-end">
+                    <Link to="/database" className="text-sm text-brand-accent hover:text-white transition-colors">
+                        查看完整目錄 →
+                    </Link>
                 </div>
             </div>
 
-            {/* 4. Health Check */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    💿 Catalog Health Check
-                </h2>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-center">
-                        <div className="text-3xl font-black text-white">{totalSongs}</div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Total Songs</div>
-                    </div>
-                    <div className={`bg-slate-950 p-4 rounded-lg border ${missingISRC === 0 ? 'border-green-900/50' : 'border-red-900/50'} text-center`}>
-                        <div className={`text-3xl font-black ${missingISRC === 0 ? 'text-green-500' : 'text-red-500'}`}>{missingISRC}</div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Missing ISRC</div>
-                    </div>
-                    <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-center">
-                        <div className="text-3xl font-black text-brand-accent">{hasMusicBrainz}</div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Linked MBID</div>
-                    </div>
-                     <div className={`bg-slate-950 p-4 rounded-lg border ${missingLyrics === 0 ? 'border-green-900/50' : 'border-yellow-900/50'} text-center`}>
-                        <div className={`text-3xl font-black ${missingLyrics === 0 ? 'text-green-500' : 'text-yellow-500'}`}>{missingLyrics}</div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Missing Lyrics</div>
-                    </div>
-                </div>
-
-                {/* Missing Data List */}
-                {(missingISRC > 0 || missingLyrics > 0) && (
-                    <div className="bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
-                        <div className="px-4 py-3 bg-red-900/20 border-b border-red-900/30 text-red-200 text-xs font-bold uppercase tracking-wider flex justify-between">
-                            <span>Completeness Report</span>
-                            <span>{missingISRC + missingLyrics} Issues</span>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                            {songs.map(song => {
-                                const issues = [];
-                                if (!song.isrc) issues.push('ISRC');
-                                if (!song.lyrics || song.lyrics.length < 10) issues.push('Lyrics');
-
-                                if (issues.length === 0) return null;
-
-                                return (
-                                    <div key={song.id} className="flex items-center justify-between p-3 border-b border-slate-800 last:border-0 hover:bg-slate-900 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <img src={song.coverUrl} className="w-8 h-8 rounded bg-slate-800 object-cover" alt="cover"/>
-                                            <span className="text-sm font-medium text-slate-300">{song.title}</span>
-                                        </div>
-                                        <div className="flex gap-2 items-center">
-                                            <div className="flex gap-1">
-                                                {issues.map(i => (
-                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 border border-red-900/50">{i}</span>
-                                                ))}
-                                            </div>
-                                            <Link to={`/song/${song.id}`} className="text-xs bg-slate-800 hover:bg-white text-slate-300 hover:text-black px-3 py-1 rounded transition-colors">Edit</Link>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
         </div>
 
-        {/* COL 2: Business Simulation */}
-        <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-brand-gold text-slate-900 text-[10px] font-bold px-2 py-1 rounded-bl uppercase tracking-widest z-10">
-                    Live Monitor
-                </div>
+        {/* COL 2: Performance & Quick Links */}
+        <div className="space-y-8">
+            
+            {/* Performance Card */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-brand-accent text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl shadow-lg uppercase tracking-wider">LIVE MONITOR</div>
                 
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    💰 Performance
+                    🎯 Performance
                 </h2>
-                
-                <div className="p-6 bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-lg border border-indigo-500/30 mb-6 text-center">
-                    <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Hearts / Support</p>
-                    <div className="text-5xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                        {mockRevenue.hearts}
-                    </div>
-                    <div className="text-xs text-indigo-300 mt-2 font-mono">
-                        Connected Souls
-                    </div>
-                </div>
 
-                <div className="p-6 bg-gradient-to-br from-green-900/20 to-slate-900 rounded-lg border border-green-700/30 mb-6 text-center">
-                    <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">Est. Daily Revenue</p>
-                    <div className="text-3xl font-black text-green-400">
-                        ~ $ {mockRevenue.dailyRevenueUSD} USD
+                <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-brand-gold/10 to-transparent border border-brand-gold/20 rounded-xl p-6 text-center">
+                        <div className="text-xs text-brand-gold uppercase tracking-widest mb-2">Hearts / Support</div>
+                        <div className="text-5xl font-black text-brand-gold">{mockRevenue.hearts.toLocaleString()}</div>
+                        <div className="text-xs text-slate-400 mt-2">Connected Souls</div>
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                        (Approx. NT$ {mockRevenue.dailyRevenueNTD})
-                    </div>
-                </div>
 
-                <div className="mt-8 p-4 bg-slate-950 border border-slate-800 rounded-lg">
-                    <h4 className="text-brand-accent text-xs font-bold uppercase mb-2">Manager Note</h4>
-                    <p className="text-slate-400 text-xs leading-relaxed italic">
-                        "Your Carrd is the beautiful storefront. This dashboard is the engine room. With your Cloud Vault connected, your legacy is safe." — Gemini
-                    </p>
+                    <div className="bg-slate-800/50 rounded-xl p-6 text-center">
+                        <div className="text-xs text-slate-400 uppercase tracking-widest mb-2">Est. Daily Revenue</div>
+                        <div className="text-3xl font-bold text-green-400">~ ${mockRevenue.dailyRevenueUSD} USD</div>
+                        <div className="text-xs text-slate-500 mt-1">(Approx. NT$ {mockRevenue.dailyRevenueNTD.toLocaleString()})</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
+            {/* Quick Links */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+                <h2 className="text-lg font-bold text-white mb-4">🔗 Quick Links</h2>
+                <div className="space-y-2">
+                    <a href={PROJECT_LINKS.supabase} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-700 transition-colors group">
+                        <span className="text-slate-300 text-sm">Supabase Dashboard</span>
+                        <span className="text-slate-500 group-hover:text-white">↗</span>
+                    </a>
+                    <a href={PROJECT_LINKS.vercel} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-700 transition-colors group">
+                        <span className="text-slate-300 text-sm">Vercel Dashboard</span>
+                        <span className="text-slate-500 group-hover:text-white">↗</span>
+                    </a>
+                    <a href={PROJECT_LINKS.drive} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-700 transition-colors group">
+                        <span className="text-slate-300 text-sm">Google Drive Vault</span>
+                        <span className="text-slate-500 group-hover:text-white">↗</span>
+                    </a>
+                    <Link to="/add" className="flex items-center justify-between p-3 bg-brand-accent/10 border border-brand-accent/30 rounded-lg hover:bg-brand-accent/20 transition-colors group">
+                        <span className="text-brand-accent text-sm font-bold">+ Add New Song</span>
+                        <span className="text-brand-accent">→</span>
+                    </Link>
+                </div>
+            </div>
+
+        </div>
       </div>
     </div>
   );
