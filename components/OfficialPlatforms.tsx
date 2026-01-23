@@ -101,9 +101,6 @@ const OfficialPlatforms: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
             Official Platforms
           </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">
-            所有平台均已通過官方認證。點擊任一平台即可前往收聽或追蹤。
-          </p>
         </div>
 
         {/* Platform Grid */}
@@ -151,47 +148,6 @@ const OfficialPlatforms: React.FC = () => {
               <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-xl"></div>
             </a>
           ))}
-        </div>
-
-        {/* Musixmatch Credentials */}
-        <div className="mt-12 bg-gradient-to-r from-orange-900/20 to-slate-900 border border-orange-500/30 rounded-2xl p-8">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-700 rounded-2xl flex items-center justify-center shadow-2xl">
-                <span className="text-5xl">📝</span>
-              </div>
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <h3 className="text-2xl font-black text-white">Musixmatch Certified Master</h3>
-                <div className="px-2 py-1 bg-brand-gold text-slate-900 text-xs font-bold rounded">
-                  TRIPLE CERTIFIED
-                </div>
-              </div>
-              <p className="text-slate-300 mb-4">
-                全球排名第二的 Musixmatch 認證大師，擁有三重認證資格，並榮登名人堂 (Hall of Fame)。
-                專精於手工歌詞對時、動態歌詞製作，為音樂愛好者提供最精準的歌詞體驗。
-              </p>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                <span className="px-3 py-1 bg-orange-900/30 text-orange-400 text-xs font-bold rounded-full border border-orange-900/50">
-                  🏆 Global Rank #2
-                </span>
-                <span className="px-3 py-1 bg-orange-900/30 text-orange-400 text-xs font-bold rounded-full border border-orange-900/50">
-                  ⭐ Triple Certified
-                </span>
-                <span className="px-3 py-1 bg-orange-900/30 text-orange-400 text-xs font-bold rounded-full border border-orange-900/50">
-                  🎖️ Hall of Fame
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Note */}
-        <div className="mt-8 text-center">
-          <p className="text-slate-500 text-xs">
-            所有連結均為官方認證頁面。如有任何問題，請透過官方網站聯繫。
-          </p>
         </div>
       </div>
     </div>
