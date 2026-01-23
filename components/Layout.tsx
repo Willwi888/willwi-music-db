@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
 import { isAdminLoggedIn } from '../services/adminService';
+import Snowfall from './Snowfall';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSnowing, setIsSnowing] = useState(false);
   const { t, lang, setLang } = useTranslation();
 
   // Check if we are on home page for transparent nav
@@ -24,8 +26,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setLang(lang === 'en' ? 'zh' : 'en');
   };
 
+  const toggleSnow = () => {
+    setIsSnowing(!isSnowing);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-brand-darker text-slate-100 font-sans selection:bg-brand-accent selection:text-brand-darker">
+      {/* 下雪動畫 */}
+      <Snowfall isActive={isSnowing} />
+      
       <nav className={`sticky top-0 z-50 border-b transition-colors duration-300 ${isHome ? 'bg-brand-darker/80 border-white/5 backdrop-blur-md' : 'bg-brand-darker/95 border-slate-800 backdrop-blur-md'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -52,9 +61,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     + {t('nav_add')}
                   </Link>
                 ) : (
-                  <Link to="/admin" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-sm font-bold tracking-wide">
-                    🔐 Manager
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link to="/admin" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-sm font-bold tracking-wide">
+                      🔐 Manager
+                    </Link>
+                    {/* 雪花按鈕 */}
+                    <button
+                      onClick={toggleSnow}
+                      className={`p-2 rounded-full transition-all text-lg hover:scale-110 ${isSnowing ? 'bg-sky-500/30 text-sky-300 shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}
+                      title={isSnowing ? '停止下雪' : '讓它下雪吧！'}
+                    >
+                      ❄️
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -69,6 +88,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             {/* Mobile Menu Button */}
             <div className="-mr-2 flex md:hidden items-center gap-4">
+              {/* 手機版雪花按鈕 */}
+              <button
+                onClick={toggleSnow}
+                className={`p-1.5 rounded-full transition-all ${isSnowing ? 'bg-sky-500/30 text-sky-300' : 'text-slate-500 hover:text-white'}`}
+              >
+                ❄️
+              </button>
               <button 
                   onClick={toggleLang} 
                   className="px-2 py-1 rounded border border-slate-600 text-xs font-bold text-slate-400 hover:text-white hover:border-white transition-all uppercase"
