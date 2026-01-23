@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { getAccessStatus } from '../services/accessService';
 
 interface LyricLine {
   time: number; // in seconds
@@ -63,6 +64,17 @@ const LyricsPlayer: React.FC = () => {
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [showCredits, setShowCredits] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  
+  // 檢查付費授權
+  useEffect(() => {
+    const status = getAccessStatus();
+    if (status.verified) {
+      setIsAuthorized(true);
+    }
+    setIsChecking(false);
+  }, []);
   
   // Parse lyrics when song changes
   useEffect(() => {
@@ -140,6 +152,57 @@ const LyricsPlayer: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
   
+  // 載入中
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">驗證中...</div>
+      </div>
+    );
+  }
+  
+  // 未授權 - 導向付費牆
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-brand-darker flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-brand-gold/10 flex items-center justify-center border border-brand-gold/30">
+            <svg className="w-10 h-10 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-white mb-4">需要存取權限</h2>
+          <p className="text-slate-400 mb-8">
+            完整的動態歌詞體驗需要付費支持後才能進入。<br/>
+            這是對創作者時間與心血的尊重。
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate(`/access?song=${id}`)}
+              className="w-full py-3 bg-brand-gold text-black font-bold rounded-lg hover:bg-brand-gold/90 transition-colors"
+            >
+              輸入存取碼
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full py-3 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              購買方案
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full py-2 text-slate-500 hover:text-slate-300 transition-colors text-sm"
+            >
+              返回
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   if (!song) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -184,12 +247,17 @@ const LyricsPlayer: React.FC = () => {
             <span className="hidden md:inline">返回</span>
           </button>
           
-          <button
-            onClick={() => setShowCredits(!showCredits)}
-            className="text-white/60 hover:text-white transition-colors text-sm"
-          >
-            {showCredits ? '歌詞' : '製作資訊'}
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-brand-gold bg-brand-gold/10 px-2 py-1 rounded-full border border-brand-gold/30">
+              已授權
+            </span>
+            <button
+              onClick={() => setShowCredits(!showCredits)}
+              className="text-white/60 hover:text-white transition-colors text-sm"
+            >
+              {showCredits ? '歌詞' : '製作資訊'}
+            </button>
+          </div>
         </div>
         
         {/* Main Content */}
