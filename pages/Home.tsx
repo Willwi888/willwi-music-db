@@ -5,8 +5,10 @@ import { getLanguageColor } from '../types';
 import { useTranslation } from '../context/LanguageContext';
 import PricingCards from '../components/PricingCards';
 
-// Willwi Official Hero Image
-const ARTIST_HERO_IMAGE = "https://p17.zdusercontent.com/attachment/572742/nGBWtmpTNA1gAhYLblesSXoiZ?token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..DuNguqol2WAk3WiKEt2srw.Mbfpe6C7F0kNE5DFsRseRfcLpnmsFIJX6bbXNEIUD8vwVC42QZeqW2_-5mxN3DnaFJZ_jmssgO1yGm440mPn2JGjfN6LCYLEKR3XZl4w9DnHsnClS3IbVUkRZWlmhMaxWj3TI3K6hz-1ZSVYRSLDVZxMLLIzrC5X_6o_4E--8wu1cRwuPTlOef1AEgDS5ynUn4Dy7MS7sgZmhiw3Vcu1jxnIKwdnIZJm1VaZf9_9EXwmxDISSDzzZFp5J3sSW9D1vKO8oM8hzB-CXggM0R44sHQutGNCcKc5pt2F9UZSVfw.1y_aP3hPN5ziOiWi6Kf9hw"; 
+// Willwi Official Hero Image - 2026 形象照
+const ARTIST_HERO_IMAGE = "/images/hero-bg.jpg";
+// 金色簽名浮水印（用於歌詞影片輸出）
+const SIGNATURE_WATERMARK = "/images/signature-gold.png"; 
 
 const Home: React.FC = () => {
   const { songs } = useData();
