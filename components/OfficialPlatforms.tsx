@@ -113,8 +113,7 @@ const OfficialPlatforms: React.FC = () => {
               rel="noopener noreferrer"
               className={`
                 group relative overflow-hidden
-                bg-gradient-to-br ${platform.color}
-                p-4 rounded-xl
+                bg-gradient-to-br from-slate-800 to-slate-900                p-4 rounded-xl
                 border border-white/10
                 hover:border-white/30
                 hover:scale-105 hover:shadow-2xl
@@ -134,13 +133,8 @@ const OfficialPlatforms: React.FC = () => {
                 </div>
               )}
 
-              {/* Icon */}
               <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">
-                {platform.icon}
-              </span>
 
-              {/* Name */}
-              <span className="text-white text-sm font-bold text-center leading-tight">
                 {platform.name}
               </span>
 
