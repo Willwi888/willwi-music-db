@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { getAccessStatus } from '../services/accessService';
+import { isAdminLoggedIn } from '../services/adminService';
 
 interface LyricLine {
   time: number; // in seconds
@@ -67,8 +68,16 @@ const LyricsPlayer: React.FC = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   
-  // 檢查付費授權
+  // 檢查付費授權（管理員自動通過）
   useEffect(() => {
+    // 管理員直接通過
+    if (isAdminLoggedIn()) {
+      setIsAuthorized(true);
+      setIsChecking(false);
+      return;
+    }
+    
+    // 一般用戶檢查付費狀態
     const status = getAccessStatus();
     if (status.verified) {
       setIsAuthorized(true);
@@ -423,6 +432,15 @@ Label | Willwi Music`}
           </p>
         </div>
       )}
+      
+      {/* 金色簽名浮水印 - 右下角 */}
+      <div className="fixed bottom-24 right-4 md:right-8 z-20 opacity-60 hover:opacity-100 transition-opacity">
+        <img 
+          src="/images/signature-gold.png" 
+          alt="Willwi Signature" 
+          className="h-8 md:h-12 w-auto"
+        />
+      </div>
       
       {/* Custom Styles */}
       <style>{`
