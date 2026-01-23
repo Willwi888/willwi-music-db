@@ -30,7 +30,7 @@ function convertFromSupabase(s: SupabaseSong): Song {
     credits: s.credits || '',
     coverOverlayText: s.cover_overlay_text || '',
     publisher: s.publisher || '',
-    musicbrainzId: s.musicbrainz_id || '',
+    musicBrainzId: s.musicbrainz_id || '',
     cloudVideoUrl: s.cloud_video_url || '',
     customAudioLink: s.custom_audio_link || '',
     musixmatchUrl: s.musixmatch_url || '',
@@ -69,7 +69,7 @@ function convertToSupabase(s: Partial<Song>): Partial<SupabaseSong> {
   if (s.credits !== undefined) result.credits = s.credits;
   if (s.coverOverlayText !== undefined) result.cover_overlay_text = s.coverOverlayText;
   if (s.publisher !== undefined) result.publisher = s.publisher;
-  if (s.musicbrainzId !== undefined) result.musicbrainz_id = s.musicbrainzId;
+  if (s.musicBrainzId !== undefined) result.musicbrainz_id = s.musicBrainzId;
   if (s.cloudVideoUrl !== undefined) result.cloud_video_url = s.cloudVideoUrl;
   if (s.customAudioLink !== undefined) result.custom_audio_link = s.customAudioLink;
   if (s.musixmatchUrl !== undefined) result.musixmatch_url = s.musixmatchUrl;
