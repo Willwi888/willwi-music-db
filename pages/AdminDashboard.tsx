@@ -53,7 +53,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleImportClick = () => {
-      if (window.confirm("⚠️ 警告：匯入備份將會「覆蓋」目前所有的資料庫內容。\n\n請確認您選擇的備份檔案是最新的。\n確定要繼續嗎？")) {
+      if (window.confirm(" 警告：匯入備份將會「覆蓋」目前所有的資料庫內容。\n\n請確認您選擇的備份檔案是最新的。\n確定要繼續嗎？")) {
           fileInputRef.current?.click();
       }
   };
@@ -125,7 +125,7 @@ const AdminDashboard: React.FC = () => {
                  <div className="absolute top-0 right-0 bg-brand-gold text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl shadow-lg uppercase tracking-wider">CRITICAL</div>
                  
                  <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
-                    ☁️ Cloud Sync (Google Drive)
+                     Cloud Sync (Google Drive)
                  </h2>
                  <p className="text-slate-300 text-sm mb-6 max-w-lg leading-relaxed">
                     這是確保資料永久保存的唯一途徑。網站本身不儲存資料，資料在您的瀏覽器中。請定期下載 JSON 檔並上傳至 Google Drive 專屬金庫。
@@ -141,7 +141,7 @@ const AdminDashboard: React.FC = () => {
                             onClick={handleExport}
                             className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-slate-700 hover:bg-white hover:text-slate-900 text-white font-bold rounded-lg transition-all border border-slate-600 group-hover:border-brand-accent"
                         >
-                             <span>⬇️ 下載最新備份 (.json)</span>
+                             <span>⬇ 下載最新備份 (.json)</span>
                          </button>
                      </div>
 
@@ -154,7 +154,7 @@ const AdminDashboard: React.FC = () => {
                             onClick={openGoogleDrive}
                             className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-green-500/20"
                         >
-                            <span>↗️ 開啟 Google Drive</span>
+                            <span>↗ 開啟 Google Drive</span>
                         </button>
                      </div>
                  </div>
@@ -170,7 +170,7 @@ const AdminDashboard: React.FC = () => {
                             disabled={isProcessing}
                             className="text-xs text-brand-accent hover:text-white underline font-bold px-2 py-1"
                         >
-                            🔄 從檔案還原資料庫
+                             從檔案還原資料庫
                         </button>
                         <input 
                             type="file" 
@@ -187,7 +187,7 @@ const AdminDashboard: React.FC = () => {
              {/* 2. INFRASTRUCTURE & DEPLOYMENT */}
              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    🏗️ Project Infrastructure
+                     Project Infrastructure
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <a 
@@ -246,7 +246,7 @@ const AdminDashboard: React.FC = () => {
             {/* 3. Health Check */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    💿 Catalog Health Check
+                    Catalog Health Check
                 </h2>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -314,7 +314,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    💰 Performance
+                     Performance
                 </h2>
                 
                 <div className="p-6 bg-gradient-to-br from-indigo-900/40 to-slate-900 rounded-lg border border-indigo-500/30 mb-6 text-center">

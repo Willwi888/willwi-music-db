@@ -252,19 +252,19 @@ const AddSong: React.FC = () => {
                 onClick={() => { setImportMode('single'); setAlbumResults([]); setMbResults([]); setSelectedAlbum(null); }}
                 className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${importMode === 'single' ? 'bg-brand-accent text-slate-900 shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                  🎵 {t('form_mode_single')}
+                   {t('form_mode_single')}
               </button>
               <button 
                 onClick={() => { setImportMode('album'); setTrackResults([]); setMbResults([]); setFormData({}); }}
                 className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${importMode === 'album' ? 'bg-brand-accent text-slate-900 shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                  💿 {t('form_mode_album')}
+                   {t('form_mode_album')}
               </button>
                <button 
                 onClick={() => { setImportMode('mb'); setTrackResults([]); setAlbumResults([]); setFormData({}); }}
                 className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${importMode === 'mb' ? 'bg-[#eb743b] text-white shadow' : 'text-slate-400 hover:text-white'}`}
               >
-                  🧠 MusicBrainz
+                   MusicBrainz
               </button>
           </div>
       </div>

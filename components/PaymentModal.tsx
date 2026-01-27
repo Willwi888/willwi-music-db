@@ -31,7 +31,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
       <div className="relative z-10 bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in">
         <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
             <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                💎 儲值額度
+                 儲值額度
             </h3>
             <button onClick={onClose} className="text-slate-400 hover:text-white text-xl">✕</button>
         </div>
