@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
-import { isAdminLoggedIn } from '../services/adminService';
-import Snowfall from './Snowfall';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSnowing, setIsSnowing] = useState(false);
   const { t, lang, setLang } = useTranslation();
 
   // Check if we are on home page for transparent nav
   const isHome = location.pathname === '/';
-  
-  // Check admin status
-  const isAdmin = isAdminLoggedIn();
 
   const isActive = (path: string) => location.pathname === path 
     ? "text-brand-accent font-bold" 
@@ -26,15 +20,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setLang(lang === 'en' ? 'zh' : 'en');
   };
 
-  const toggleSnow = () => {
-    setIsSnowing(!isSnowing);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-brand-darker text-slate-100 font-sans selection:bg-brand-accent selection:text-brand-darker">
-      {/* 下雪動畫 */}
-      <Snowfall isActive={isSnowing} />
-      
       <nav className={`sticky top-0 z-50 border-b transition-colors duration-300 ${isHome ? 'bg-brand-darker/80 border-white/5 backdrop-blur-md' : 'bg-brand-darker/95 border-slate-800 backdrop-blur-md'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -54,27 +41,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <Link to="/interactive" className={`${location.pathname === '/interactive' ? 'text-brand-gold font-bold' : 'text-slate-400 hover:text-brand-gold transition-colors font-medium'}`}>
                   {t('nav_interactive')}
                 </Link>
-                
-                {/* 根據管理員狀態顯示不同按鈕 */}
-                {isAdmin ? (
-                  <Link to="/add" className="px-4 py-1.5 rounded-full bg-brand-accent text-brand-darker border border-brand-accent hover:bg-sky-400 transition-all text-sm font-bold tracking-wide">
-                    + {t('nav_add')}
-                  </Link>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Link to="/admin" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all text-sm font-bold tracking-wide">
-                      🔐 Manager
-                    </Link>
-                    {/* 雪花按鈕 */}
-                    <button
-                      onClick={toggleSnow}
-                      className={`p-2 rounded-full transition-all text-lg hover:scale-110 ${isSnowing ? 'bg-sky-500/30 text-sky-300 shadow-lg shadow-sky-500/20' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}
-                      title={isSnowing ? '停止下雪' : '讓它下雪吧！'}
-                    >
-                      ❄️
-                    </button>
-                  </div>
-                )}
+                <Link to="/add" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-brand-accent hover:text-brand-darker hover:border-brand-accent transition-all text-sm font-bold tracking-wide">
+                  + {t('nav_add')}
+                </Link>
               </div>
 
               {/* Language Switcher */}
@@ -88,13 +57,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             {/* Mobile Menu Button */}
             <div className="-mr-2 flex md:hidden items-center gap-4">
-              {/* 手機版雪花按鈕 */}
-              <button
-                onClick={toggleSnow}
-                className={`p-1.5 rounded-full transition-all ${isSnowing ? 'bg-sky-500/30 text-sky-300' : 'text-slate-500 hover:text-white'}`}
-              >
-                ❄️
-              </button>
               <button 
                   onClick={toggleLang} 
                   className="px-2 py-1 rounded border border-slate-600 text-xs font-bold text-slate-400 hover:text-white hover:border-white transition-all uppercase"
@@ -130,17 +92,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link to="/" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/')}>{t('nav_home')}</Link>
               <Link to="/database" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/database')}>{t('nav_catalog')}</Link>
               <Link to="/interactive" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/interactive')}>{t('nav_interactive')}</Link>
-              
-              {/* 根據管理員狀態顯示不同按鈕 */}
-              {isAdmin ? (
-                <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
-                  + {t('nav_add')}
-                </Link>
-              ) : (
-                <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-white bg-slate-700 mt-4 text-center">
-                  🔐 Manager
-                </Link>
-              )}
+              <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
+                + {t('nav_add')}
+              </Link>
             </div>
           </div>
         )}
@@ -191,6 +145,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <span className="hidden md:inline text-slate-700">|</span>
                 <a href="https://musicbrainz.org/artist/526cc0f8-da20-4d2d-86a5-4bf841a6ba3c" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">MusicBrainz</a>
                 <a href="https://www.musixmatch.com/artist/Willwi" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Musixmatch</a>
+                <Link to="/admin" className="hover:text-white transition-colors text-slate-700">Admin</Link>
               </div>
           </div>
         </div>

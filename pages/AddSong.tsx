@@ -4,7 +4,6 @@ import { useData } from '../context/DataContext';
 import { Language, ProjectType, Song } from '../types';
 import { searchSpotifyTracks, searchSpotifyAlbums, getSpotifyAlbumTracks, SpotifyTrack, SpotifyAlbum } from '../services/spotifyService';
 import { getWillwiReleases, getCoverArtUrl, MBReleaseGroup } from '../services/musicbrainzService';
-import { DEFAULT_CREDITS } from '../constants/credits';
 import { useTranslation } from '../context/LanguageContext';
 
 // Helper to clean Google Redirect URLs
@@ -53,7 +52,7 @@ const AddSong: React.FC = () => {
     coverUrl: 'https://picsum.photos/400/400', 
     lyrics: '',
     description: '',
-    credits: DEFAULT_CREDITS,
+    credits: '',
     spotifyLink: '', // Ensure initialized
     musicBrainzId: '',
   });
