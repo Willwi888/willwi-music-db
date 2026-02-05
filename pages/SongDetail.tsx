@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { Song, Language, ProjectType, getLanguageColor } from '../types';
-import { generateMusicCritique } from '../services/geminiService';
 import { searchSpotifyTracks, getSpotifyAlbum, SpotifyTrack } from '../services/spotifyService';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -39,10 +38,6 @@ const SongDetail: React.FC = () => {
   const [spotifyResults, setSpotifyResults] = useState<SpotifyTrack[]>([]);
   const [searchingSpotify, setSearchingSpotify] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
-
-  // AI State
-  const [aiReview, setAiReview] = useState<string>('');
-  const [loadingAi, setLoadingAi] = useState(false);
 
   // View Mode: Story or Lyric Game
   const [storyMode, setStoryMode] = useState<'desc' | 'maker'>('desc');
@@ -82,13 +77,6 @@ const SongDetail: React.FC = () => {
         await deleteSong(id);
         navigate('/database');
     }
-  };
-
-  const handleAiGenerate = async () => {
-    setLoadingAi(true);
-    const review = await generateMusicCritique(song);
-    setAiReview(review);
-    setLoadingAi(false);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -449,29 +437,6 @@ const SongDetail: React.FC = () => {
             </div>
 
             <div className="lg:col-span-2 space-y-8">
-                 <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 rounded-3xl p-8 border border-indigo-500/20 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                         <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
-                    </div>
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tighter">
-                                <span className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">✨</span>
-                                Willwi AI Critique
-                            </h3>
-                            <button 
-                                onClick={handleAiGenerate}
-                                disabled={loadingAi}
-                                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/40 disabled:opacity-50"
-                            >
-                                {loadingAi ? t('detail_ai_loading') : t('detail_ai_btn')}
-                            </button>
-                        </div>
-                        <div className="bg-slate-950/60 rounded-2xl p-6 min-h-[120px] text-slate-300 leading-relaxed whitespace-pre-line border border-white/5 font-serif text-lg italic shadow-inner">
-                            {aiReview ? aiReview : "Generate a professional music critique using AI based on the current metadata and lyrics."}
-                        </div>
-                    </div>
-                </div>
 
                 <div className="bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-xl">
                     <div className="flex gap-8 mb-8 border-b border-slate-700">

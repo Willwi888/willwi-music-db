@@ -340,7 +340,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="mt-8 p-4 bg-slate-950 border border-slate-800 rounded-lg">
                     <h4 className="text-brand-accent text-xs font-bold uppercase mb-2">Manager Note</h4>
                     <p className="text-slate-400 text-xs leading-relaxed italic">
-                        "Your Carrd is the beautiful storefront. This dashboard is the engine room. With your Cloud Vault connected, your legacy is safe." — Gemini
+                        "Your Carrd is the beautiful storefront. This dashboard is the engine room. With your Cloud Vault connected, your legacy is safe."
                     </p>
                 </div>
             </div>
