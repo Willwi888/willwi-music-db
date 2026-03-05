@@ -15,20 +15,21 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <UserProvider>
-          <DataProvider>
-              <HashRouter>
-              <Layout>
-                  <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/database" element={<Database />} />
-                  <Route path="/add" element={<AddSong />} />
-                  <Route path="/song/:id" element={<SongDetail />} />
-                  <Route path="/interactive" element={<Interactive />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  </Routes>
-              </Layout>
-              </HashRouter>
-          </DataProvider>
+        <DataProvider>
+          <HashRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/database" element={<Database />} />
+                {/* 先關掉新增歌曲頁 */}
+                {/* <Route path="/add" element={<AddSong />} /> */}
+                <Route path="/song/:id" element={<SongDetail />} />
+                <Route path="/interactive" element={<Interactive />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+              </Routes>
+            </Layout>
+          </HashRouter>
+        </DataProvider>
       </UserProvider>
     </LanguageProvider>
   );
