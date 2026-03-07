@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { useUser } from '../context/UserContext';
 import { Language, ProjectType, Song } from '../types';
 import { searchSpotifyTracks, searchSpotifyAlbums, getSpotifyAlbumTracks, SpotifyTrack, SpotifyAlbum } from '../services/spotifyService';
 import { getWillwiReleases, getCoverArtUrl, MBReleaseGroup } from '../services/musicbrainzService';
@@ -23,6 +24,7 @@ const cleanGoogleRedirect = (url: string) => {
 const AddSong: React.FC = () => {
   const navigate = useNavigate();
   const { addSong } = useData();
+  const { user } = useUser();
   const { t } = useTranslation();
 
   // Mode: 'single', 'album', 'mb'
@@ -194,6 +196,18 @@ const AddSong: React.FC = () => {
         navigate('/database');
     }, 1500);
   };
+
+  if (!user?.isAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto py-24 text-center">
+        <h2 className="text-3xl font-bold text-white mb-4 uppercase tracking-widest">Access Denied</h2>
+        <p className="text-slate-400 mb-8">You must be an administrator to add or edit songs.</p>
+        <button onClick={() => navigate('/admin')} className="px-8 py-3 bg-brand-accent text-slate-900 font-bold rounded-full uppercase tracking-widest text-xs hover:bg-sky-400 transition-colors">
+          Go to Admin Login
+        </button>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

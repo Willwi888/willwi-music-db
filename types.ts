@@ -43,6 +43,23 @@ export interface Song {
   lyrics?: string;
   description?: string;
   credits?: string; // Producer, Arranger, etc.
+  
+  // AI Generated Data
+  aiSyncData?: LyricLine[];
+  aiHighlights?: SongHighlight[];
+}
+
+export interface LyricLine {
+  startTime: number; // seconds
+  endTime: number; // seconds
+  text: string;
+}
+
+export interface SongHighlight {
+  startTime: number;
+  endTime: number;
+  reason: string;
+  suggestedStyle?: string;
 }
 
 export interface SongContextType {
@@ -51,6 +68,8 @@ export interface SongContextType {
   updateSong: (id: string, updatedSong: Partial<Song>) => Promise<boolean>; 
   deleteSong: (id: string) => Promise<void>;
   getSong: (id: string) => Song | undefined;
+  isPlayerEnabled: boolean;
+  setIsPlayerEnabled: (val: boolean) => void;
 }
 
 // Helper for UI Colors (Spotify for Artists style)

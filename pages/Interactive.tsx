@@ -4,11 +4,9 @@ import { useUser } from '../context/UserContext';
 import { Song } from '../types';
 import { Link } from 'react-router-dom';
 import PaymentModal from '../components/PaymentModal';
+import { motion, AnimatePresence } from 'motion/react';
 
-// -------------------
-// Types & Helper
-// -------------------
-type GameState = 'login' | 'select' | 'ready' | 'playing' | 'finished';
+type GameState = 'intro' | 'pre-start' | 'playing' | 'finished';
 
 interface SyncPoint {
   time: number;
@@ -18,70 +16,30 @@ interface SyncPoint {
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 100); // 2 digits
+  const ms = Math.floor((seconds % 1) * 100);
   return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 };
 
 const Interactive: React.FC = () => {
   const { songs } = useData();
-  const { user, login, logout, deductCredit } = useUser();
+  const { user, deductCredit } = useUser();
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-
-  // Lock System State
-  const [isSystemLocked, setIsSystemLocked] = useState(true);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [lockError, setLockError] = useState('');
-
-  // Filter songs that actually have lyrics
   const playableSongs = songs.filter(s => s.lyrics && s.lyrics.length > 10);
 
-  const [gameState, setGameState] = useState<GameState>('login');
+  const [gameState, setGameState] = useState<GameState>('intro');
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
 
-  // Game Logic State
   const [lineIndex, setLineIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [syncData, setSyncData] = useState<SyncPoint[]>([]);
   
-  // Refs for timer
   const startTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>(0);
 
-  // Sync gameState with user login status
-  useEffect(() => {
-    if (user) {
-        if (gameState === 'login') setGameState('select');
-    } else {
-        setGameState('login');
-    }
-  }, [user]);
-
-  const handleUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === '8888') {
-        setIsSystemLocked(false);
-        setLockError('');
-    } else {
-        setLockError('Incorrect password.');
-        setPasswordInput('');
-    }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-      e.preventDefault();
-      if(loginEmail.trim()) {
-          login(loginEmail);
-      }
-  };
-
-  // -------------------
-  // Game Functions
-  // -------------------
   const handleSelectSong = (song: Song) => {
     setSelectedSong(song);
-    setGameState('ready');
+    setGameState('pre-start');
     setLineIndex(0);
     setElapsedTime(0);
     setSyncData([]);
@@ -94,7 +52,7 @@ const Interactive: React.FC = () => {
     
     const loop = () => {
       const now = Date.now();
-      const delta = (now - startTimeRef.current) / 1000; // seconds
+      const delta = (now - startTimeRef.current) / 1000;
       setElapsedTime(delta);
       animationFrameRef.current = requestAnimationFrame(loop);
     };
@@ -107,11 +65,9 @@ const Interactive: React.FC = () => {
     const lyricsLines = selectedSong.lyrics!.split('\n').filter(l => l.trim() !== '');
     const currentLine = lyricsLines[lineIndex];
 
-    // Record the sync point
     const newSyncPoint = { time: elapsedTime, text: currentLine };
     setSyncData(prev => [...prev, newSyncPoint]);
 
-    // Move to next line or finish
     if (lineIndex < lyricsLines.length - 1) {
       setLineIndex(prev => prev + 1);
     } else {
@@ -126,18 +82,18 @@ const Interactive: React.FC = () => {
 
   const resetGame = () => {
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    setGameState('select');
+    setGameState('intro');
     setSelectedSong(null);
     setLineIndex(0);
     setElapsedTime(0);
     setSyncData([]);
   };
 
-  // -------------------
-  // Export & Payment Functions
-  // -------------------
   const handleDownloadClick = () => {
-      if (!user) return;
+      if (!user) {
+          alert("請先登入");
+          return;
+      }
 
       if (deductCredit()) {
           downloadSrt();
@@ -167,11 +123,10 @@ const Interactive: React.FC = () => {
     alert(`下載成功！已扣除 1 點額度。\n剩餘額度：${user?.credits}`);
   };
 
-  // Keyboard support for spacebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && gameState === 'playing') {
-        e.preventDefault(); // prevent scroll
+        e.preventDefault();
         handleSync();
       }
     };
@@ -179,258 +134,203 @@ const Interactive: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, lineIndex, elapsedTime]);
 
-
-  // -------------------
-  // Render Views
-  // -------------------
-
-  // Lock Screen
-  if (isSystemLocked) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center px-4">
-             <div className="bg-slate-900 border border-slate-800 rounded-sm p-8 max-w-md w-full shadow-2xl text-center">
-                 <div className="text-3xl text-brand-gold mb-4 font-mono tracking-widest">SYSTEM LOCKED</div>
-                 <p className="text-slate-400 mb-8 text-sm">Restricted Area. Authorized Personnel Only.</p>
-                 
-                 <form onSubmit={handleUnlock} className="space-y-4">
-                     <input 
-                        type="password" 
-                        placeholder="ACCESS CODE"
-                        className="w-full bg-black border border-slate-700 rounded-sm px-4 py-3 text-white focus:border-brand-accent outline-none text-center tracking-[0.5em] font-mono"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                     />
-                     {lockError && <p className="text-red-500 text-xs font-mono">{lockError}</p>}
-                     <button type="submit" className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-sm transition-colors uppercase tracking-widest text-xs">
-                         Unlock
-                     </button>
-                 </form>
-             </div>
-        </div>
-      );
-  }
-
-  // 0. Login View
-  if (gameState === 'login') {
-      return (
-        <div className="max-w-md mx-auto mt-20 px-4">
-             <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 shadow-2xl text-center">
-                 <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-widest">Interactive Studio</h2>
-                 <p className="text-slate-500 mb-8 text-sm">Login to access lyric synchronization tools.</p>
-                 
-                 <form onSubmit={handleLogin} className="space-y-4">
-                     <div>
-                         <input 
-                            type="email" 
-                            required 
-                            placeholder="Enter Email"
-                            className="w-full bg-black border border-slate-700 rounded-sm px-4 py-3 text-white focus:border-brand-accent outline-none text-sm"
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                         />
-                     </div>
-                     <button type="submit" className="w-full py-3 bg-brand-accent text-brand-darker font-bold rounded-sm hover:bg-white transition-colors uppercase tracking-wide text-sm">
-                         Start Session
-                     </button>
-                 </form>
-                 <div className="mt-6 pt-6 border-t border-slate-800 text-[10px] text-slate-600 uppercase tracking-widest">
-                     Demo Environment
-                 </div>
-             </div>
-        </div>
-      );
-  }
-  
-  // 1. Selection View
-  if (gameState === 'select') {
-    return (
-      <div className="max-w-6xl mx-auto pb-12 px-4 relative">
-        {/* User Stats Bar */}
-        <div className="absolute top-0 right-4 z-20 flex items-center gap-4 bg-slate-900/90 backdrop-blur px-6 py-3 rounded-full border border-slate-800 shadow-lg">
-             <span className="text-slate-300 text-xs font-bold uppercase tracking-wider">{user?.name}</span>
-             <div className="flex items-center gap-1 text-brand-gold font-bold text-sm">
-                 <span>CREDITS:</span>
-                 <span>{user?.credits}</span>
-             </div>
-             <button onClick={() => setShowPaymentModal(true)} className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded border border-slate-700 hover:text-white uppercase tracking-wider">Top Up</button>
-             <button onClick={logout} className="text-[10px] text-slate-500 hover:text-white ml-2 uppercase tracking-wider">Logout</button>
-        </div>
-
-        <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} />
-
-        {/* Intro Section - Professional Look */}
-        <div className="bg-slate-900 rounded-xl p-10 mb-10 border border-slate-800 shadow-2xl relative overflow-hidden mt-16 md:mt-12">
-           <div className="relative z-10">
-                <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tighter text-white uppercase">Lyric Video Studio</h1>
-                <p className="text-slate-400 text-lg max-w-2xl font-light">
-                  Professional manual synchronization tool. Select a track to generate timestamped SRT files for video production.
-                </p>
-           </div>
-        </div>
-
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-          <span className="w-1 h-6 bg-brand-accent"></span>
-          <span className="uppercase tracking-widest text-sm">Select Track</span>
-        </h2>
-
-        {playableSongs.length === 0 ? (
-          <div className="text-center py-20 bg-slate-900 rounded-sm border border-slate-800">
-             <p className="text-slate-500 text-sm uppercase tracking-widest">No tracks with lyrics available.</p>
-             <Link to="/add" className="inline-block mt-4 text-brand-accent hover:text-white text-xs uppercase underline">Go to Database</Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {playableSongs.map(song => (
-              <button 
-                key={song.id} 
-                onClick={() => handleSelectSong(song)}
-                className="group relative bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-brand-accent transition-all text-left hover:shadow-2xl"
-              >
-                <div className="aspect-video bg-black relative">
-                  <img src={song.coverUrl} alt={song.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500 grayscale group-hover:grayscale-0" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                     <span className="px-4 py-2 border border-white text-white font-bold uppercase text-xs tracking-widest hover:bg-white hover:text-black transition-colors">
-                        Launch
-                     </span>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-bold text-white group-hover:text-brand-accent transition-colors truncate">{song.title}</h3>
-                  <p className="text-slate-500 text-xs mt-1 uppercase tracking-wider">{song.versionLabel || song.language}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+  return (
+    <div className="flex-grow bg-[#0a0502] text-[#e0d8d0] font-serif selection:bg-[#ff4e00]/30 relative overflow-hidden flex flex-col">
+      {/* Atmospheric Background */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[#3a1510] rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#ff4e00] rounded-full mix-blend-screen filter blur-[120px] opacity-10"></div>
       </div>
-    );
-  }
 
-  // 2. Ready & Playing View
-  if (gameState === 'ready' || gameState === 'playing') {
-    const lyricsLines = selectedSong!.lyrics!.split('\n').filter(l => l.trim() !== '');
-    const currentLine = lyricsLines[lineIndex];
-    const nextLine = lineIndex < lyricsLines.length - 1 ? lyricsLines[lineIndex + 1] : 'END';
-    const progress = (lineIndex / lyricsLines.length) * 100;
+      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} />
 
-    return (
-       <div className="max-w-4xl mx-auto px-4 pb-12 min-h-screen flex flex-col">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center py-6 mb-4 border-b border-slate-800">
-             <button onClick={resetGame} className="text-slate-500 hover:text-white flex items-center gap-2 text-xs uppercase tracking-widest">
-               ← Exit
-             </button>
-             <div className="text-center">
-                <div className="text-brand-accent font-bold text-[10px] uppercase tracking-[0.2em] mb-1">Session Active</div>
-                <div className="text-white font-bold">{selectedSong?.title}</div>
-             </div>
-             <div className="w-20 text-right font-mono text-brand-gold">
-               {formatTime(elapsedTime)}
-             </div>
-          </div>
+      <div className="relative z-10 flex-grow flex flex-col max-w-4xl mx-auto w-full px-6 py-12 md:py-24">
+        <AnimatePresence mode="wait">
+          
+          {/* 1. Intro View */}
+          {gameState === 'intro' && (
+            <motion.div 
+              key="intro"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="flex flex-col items-center text-center space-y-16"
+            >
+              <div className="space-y-8 max-w-lg">
+                <h1 className="text-sm tracking-[0.3em] uppercase text-[#ff4e00]/80 font-sans">存在宣言</h1>
+                <div className="space-y-6 text-lg md:text-xl leading-relaxed font-light text-white/80">
+                  <p>我不是在做一個工具。<br/>我是在留一個地方。</p>
+                  <p>這裡不是音樂平台也不是用來被比較<br/>被評分被消耗的地方</p>
+                  <p>歌詞必須手工對時，不是因為我做不到自動化<br/>而是因為一首歌值得被人坐下來陪完</p>
+                  <p>不是為了被記得，而是為了記得。<br/>我不等誰回來。我只是留一盞燈。<br/>讓記憶裡的那個人，有一個地方可以站著。</p>
+                </div>
+              </div>
 
-          {/* Visualization Area */}
-          <div className="flex-grow flex flex-col items-center justify-center relative">
-             {/* Lyrics Card */}
-             <div className="relative z-10 w-full max-w-3xl text-center">
-                
-                {gameState === 'ready' ? (
-                  <div className="bg-slate-900 border border-slate-700 p-12 rounded-sm shadow-2xl animate-fade-in max-w-lg mx-auto">
-                      <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-widest">Ready to Record</h3>
-                      <ol className="text-left text-slate-400 space-y-4 mb-10 text-sm font-light">
-                        <li className="flex gap-3"><span className="text-brand-accent font-bold">01.</span> Prepare music in external player.</li>
-                        <li className="flex gap-3"><span className="text-brand-accent font-bold">02.</span> Click 'Start' below.</li>
-                        <li className="flex gap-3"><span className="text-brand-accent font-bold">03.</span> Press SPACEBAR to sync lyrics.</li>
-                      </ol>
-                      <button 
-                        onClick={startGame}
-                        className="w-full py-4 bg-brand-accent hover:bg-white text-brand-darker font-bold rounded-sm text-sm uppercase tracking-widest transition-colors"
-                      >
-                        Start Recording
-                      </button>
-                  </div>
+              <div className="w-full max-w-2xl pt-12 border-t border-white/10">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-white/40 mb-8 font-sans">選擇一首歌，留下來陪它</h2>
+                {playableSongs.length === 0 ? (
+                  <p className="text-white/40 text-sm">目前沒有可陪伴的歌曲。</p>
                 ) : (
-                  <>
-                     <div className="mb-16 min-h-[80px] flex flex-col items-center justify-end">
-                        <p className="text-brand-accent text-[10px] font-bold tracking-[0.3em] uppercase mb-2">NEXT</p>
-                        <p className="text-slate-500 text-lg font-light">{nextLine}</p>
-                     </div>
-
-                     <div className="space-y-4 mb-16">
-                        <div className="text-4xl md:text-5xl font-bold text-white leading-tight min-h-[100px] flex items-center justify-center">
-                           {currentLine}
-                        </div>
-                     </div>
-
-                     <div className="pt-4">
-                        <button 
-                          onClick={handleSync}
-                          className="w-64 h-24 border border-slate-600 hover:border-brand-accent bg-transparent text-slate-500 hover:text-white rounded-sm transition-all flex flex-col items-center justify-center gap-2 mx-auto uppercase tracking-widest text-xs"
-                        >
-                           <span>Tap to Sync</span>
-                           <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400">SPACEBAR</span>
-                        </button>
-                     </div>
-                  </>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {playableSongs.map(song => (
+                      <button 
+                        key={song.id} 
+                        onClick={() => handleSelectSong(song)}
+                        className="group relative bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-6 text-left transition-all duration-500 backdrop-blur-sm"
+                      >
+                        <h3 className="text-xl font-medium text-white group-hover:text-[#ff4e00] transition-colors">{song.title}</h3>
+                        <p className="text-white/40 text-sm mt-2 font-sans">{song.versionLabel || song.language}</p>
+                      </button>
+                    ))}
+                  </div>
                 )}
-             </div>
-          </div>
+              </div>
+            </motion.div>
+          )}
 
-          {/* Progress Bar */}
-          <div className="mt-8 h-1 bg-slate-800 w-full">
-             <div className="h-full bg-brand-accent transition-all duration-300" style={{ width: `${progress}%` }}></div>
-          </div>
-          <div className="flex justify-between mt-2 text-[10px] text-slate-600 font-mono uppercase">
-             <span>Progress</span>
-             <span>{Math.round(progress)}%</span>
-          </div>
-       </div>
-    );
-  }
-
-  // 3. Finished / Result View
-  if (gameState === 'finished') {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-         <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} />
-         
-         <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 md:p-16 shadow-2xl">
-             <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Session Complete</h2>
-             <p className="text-slate-400 text-sm mb-10 tracking-wide uppercase">
-               Project: <span className="text-brand-accent">{selectedSong?.title}</span>
-             </p>
-
-             <div className="grid grid-cols-2 gap-px bg-slate-800 max-w-lg mx-auto mb-12 border border-slate-800">
-                <div className="bg-slate-900 p-6">
-                   <div className="text-3xl font-light text-white mb-1 font-mono">{syncData.length}</div>
-                   <div className="text-[10px] text-slate-500 uppercase tracking-widest">Lines Synced</div>
+          {/* 2. Pre-start View */}
+          {gameState === 'pre-start' && (
+            <motion.div 
+              key="pre-start"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.8 }}
+              className="flex flex-col items-center justify-center flex-grow text-center space-y-12"
+            >
+              <div className="space-y-8 max-w-lg">
+                <h2 className="text-sm tracking-[0.3em] uppercase text-[#ff4e00]/80 font-sans">開始之前</h2>
+                <div className="space-y-6 text-lg md:text-xl leading-relaxed font-light text-white/80">
+                  <p>在你開始之前，我想先說一件事。</p>
+                  <p>接下來的時間，沒有再來一次，沒有修到完美。<br/>你會慢一點，快一點，有些地方對不準，有些地方會歪。</p>
+                  <p>那是你真的在這首歌裡的證據。</p>
                 </div>
-                <div className="bg-slate-900 p-6">
-                   <div className="text-3xl font-light text-white mb-1 font-mono">{formatTime(elapsedTime)}</div>
-                   <div className="text-[10px] text-slate-500 uppercase tracking-widest">Duration</div>
-                </div>
-             </div>
+              </div>
 
-             <div className="flex flex-col md:flex-row justify-center gap-4">
+              <button 
+                onClick={startGame}
+                className="mt-8 px-8 py-4 bg-transparent border border-white/20 hover:border-white/60 text-white rounded-full transition-all duration-500 hover:bg-white hover:text-black font-sans tracking-widest text-sm"
+              >
+                如果你準備好了，我們就開始
+              </button>
+              
+              <button 
+                onClick={resetGame}
+                className="text-white/30 hover:text-white/60 text-xs font-sans tracking-widest transition-colors"
+              >
+                返回
+              </button>
+            </motion.div>
+          )}
+
+          {/* 3. Playing View */}
+          {gameState === 'playing' && (
+            <motion.div 
+              key="playing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              className="flex flex-col flex-grow relative"
+            >
+              <div className="absolute top-0 left-0 w-full flex justify-between items-center text-white/30 font-sans text-xs tracking-widest">
+                <button onClick={resetGame} className="hover:text-white transition-colors">← 離開</button>
+                <div className="font-mono">{formatTime(elapsedTime)}</div>
+              </div>
+
+              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-16 mt-12">
+                <div className="text-white/40 text-sm md:text-base font-light tracking-wide max-w-md">
+                  <p>你不需要急這首歌不會走。</p>
+                  <p>跟著它在你覺得「對了」的時候，輕輕按下空白鍵結束放開。</p>
+                  <p>每一行歌詞，都是你親手放上去的。</p>
+                </div>
+
+                <div className="w-full max-w-2xl relative h-40 flex items-center justify-center">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={lineIndex}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.5 }}
+                      className="text-3xl md:text-4xl font-medium text-white leading-relaxed"
+                    >
+                      {selectedSong?.lyrics?.split('\n').filter(l => l.trim() !== '')[lineIndex]}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
                 <button 
-                  onClick={handleDownloadClick}
-                  className="px-8 py-4 bg-brand-accent hover:bg-white text-slate-900 font-bold rounded-sm uppercase tracking-widest text-xs transition-colors"
+                  onClick={handleSync}
+                  className="w-24 h-24 rounded-full border border-white/20 flex items-center justify-center text-white/30 hover:text-white hover:border-white/60 hover:bg-white/5 transition-all duration-300 font-sans text-xs tracking-widest active:scale-95 active:bg-white/20"
                 >
-                   {user && user.credits > 0 ? 'Download .SRT' : 'Purchase Credits to Download'}
+                  SPACE
                 </button>
-                <button 
-                  onClick={resetGame}
-                  className="px-8 py-4 border border-slate-600 hover:border-white text-slate-300 hover:text-white font-bold rounded-sm transition-colors uppercase tracking-widest text-xs"
-                >
-                   New Session
-                </button>
-             </div>
-         </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 4. Finished View */}
+          {gameState === 'finished' && (
+            <motion.div 
+              key="finished"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1 }}
+              className="flex flex-col items-center text-center space-y-16"
+            >
+              <div className="space-y-8 max-w-lg">
+                <h2 className="text-sm tracking-[0.3em] uppercase text-[#ff4e00]/80 font-sans">完成後</h2>
+                <div className="space-y-6 text-lg md:text-xl leading-relaxed font-light text-white/80">
+                  <p>這不是一個完美的版本。<br/>這是一個屬於你的版本。</p>
+                  <p>你願意把它留下來真好。</p>
+                </div>
+              </div>
+
+              <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-8 text-left border-t border-white/10 pt-12">
+                <div className="space-y-4">
+                  <h3 className="text-xs tracking-[0.2em] uppercase text-white/40 font-sans">關於費用</h3>
+                  <div className="text-sm text-white/60 leading-relaxed space-y-2">
+                    <p>不是因為創作有價，而是因為時間有重量。</p>
+                    <p>如果這個網站要存在、要被維護、要被好好對待，它必須被尊重。</p>
+                    <p>你付費的不是功能，而是你願意為一首歌留下的時間。</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-xs tracking-[0.2em] uppercase text-white/40 font-sans">下載與權利說明</h3>
+                  <div className="text-sm text-white/60 leading-relaxed space-y-2">
+                    <p>你可以下載你完成的歌詞影片。<br/>那是你陪這首歌走過的紀錄。</p>
+                    <p>但下載，不代表任何著作權轉移。<br/>歌曲、歌詞、錄音的權利，仍屬原創作者所有。</p>
+                    <p>這裡不是授權平台，也不提供轉售、商用或二次授權。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-8 flex flex-col items-center space-y-6">
+                <p className="text-sm text-white/40">如果你理解這件事，你可以繼續。</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={handleDownloadClick}
+                    className="px-8 py-4 bg-white text-black rounded-full font-sans tracking-widest text-sm hover:bg-white/90 transition-colors"
+                  >
+                    下載你的紀錄 (.SRT)
+                  </button>
+                  <button 
+                    onClick={resetGame}
+                    className="px-8 py-4 border border-white/20 text-white rounded-full font-sans tracking-widest text-sm hover:bg-white/10 transition-colors"
+                  >
+                    回到起點
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
       </div>
-    );
-  }
-
-  return <div>Error State</div>;
+    </div>
+  );
 };
 
 export default Interactive;

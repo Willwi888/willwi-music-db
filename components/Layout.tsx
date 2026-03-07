@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
+import { useUser } from '../context/UserContext';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t, lang, setLang } = useTranslation();
+  const { user } = useUser();
 
   // Check if we are on home page for transparent nav
   const isHome = location.pathname === '/';
+  const isInteractive = location.pathname === '/interactive';
+  const isFullBleed = isHome || isInteractive;
 
   const isActive = (path: string) => location.pathname === path 
     ? "text-brand-accent font-bold" 
@@ -22,7 +26,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-darker text-slate-100 font-sans selection:bg-brand-accent selection:text-brand-darker">
-      <nav className={`sticky top-0 z-50 border-b transition-colors duration-300 ${isHome ? 'bg-brand-darker/80 border-white/5 backdrop-blur-md' : 'bg-brand-darker/95 border-slate-800 backdrop-blur-md'}`}>
+      <nav className={`sticky top-0 z-50 border-b transition-colors duration-300 ${isFullBleed ? 'bg-brand-darker/80 border-white/5 backdrop-blur-md' : 'bg-brand-darker/95 border-slate-800 backdrop-blur-md'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             
@@ -41,9 +45,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <Link to="/interactive" className={`${location.pathname === '/interactive' ? 'text-brand-gold font-bold' : 'text-slate-400 hover:text-brand-gold transition-colors font-medium'}`}>
                   {t('nav_interactive')}
                 </Link>
-                <Link to="/add" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-brand-accent hover:text-brand-darker hover:border-brand-accent transition-all text-sm font-bold tracking-wide">
-                  + {t('nav_add')}
-                </Link>
+                {user?.isAdmin && (
+                  <Link to="/add" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-brand-accent hover:text-brand-darker hover:border-brand-accent transition-all text-sm font-bold tracking-wide">
+                    + {t('nav_add')}
+                  </Link>
+                )}
               </div>
 
               {/* Language Switcher */}
@@ -92,17 +98,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link to="/" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/')}>{t('nav_home')}</Link>
               <Link to="/database" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/database')}>{t('nav_catalog')}</Link>
               <Link to="/interactive" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/interactive')}>{t('nav_interactive')}</Link>
-              <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
-                + {t('nav_add')}
-              </Link>
+              {user?.isAdmin && (
+                <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
+                  + {t('nav_add')}
+                </Link>
+              )}
             </div>
           </div>
         )}
       </nav>
 
-      <main className="flex-grow">
-        {/* Full bleed for Home, standard container for others */}
-        <div className={isHome ? '' : "max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8"}>
+      <main className="flex-grow flex flex-col">
+        {/* Full bleed for Home and Interactive, standard container for others */}
+        <div className={isFullBleed ? 'flex-grow flex flex-col' : "max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-grow w-full"}>
           {children}
         </div>
       </main>

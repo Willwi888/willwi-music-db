@@ -1,5 +1,5 @@
 {
-  "name": "Willwi Manager",
-  "description": "A digital legacy archive for artist Willwi. Est. Feb 25th. Powered by Gemini.",
-  "requestFramePermissions": []
+  "name": "Willwi AI DJ",
+  "description": "AI-powered dynamic lyrics video studio for Willwi. Sync lyrics, generate highlights, and create MV clips with Gemini.",
+  "requestFramePermissions": ["microphone"]
 }

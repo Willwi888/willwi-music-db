@@ -5,6 +5,7 @@ interface User {
   name: string;
   credits: number;
   isMember: boolean;
+  isAdmin?: boolean;
 }
 
 interface UserContextType {
@@ -48,14 +49,19 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const userDb = JSON.parse(localStorage.getItem('willwi_users_db') || '{}');
     let existingUser = userDb[email];
 
+    const isAdmin = email === 'will@willwi.com' || email === 'admin@willwi.com';
+
     if (!existingUser) {
       // New User: Grant 1 Free Credit
       existingUser = {
         email,
         name: email.split('@')[0],
         credits: 1,
-        isMember: false
+        isMember: false,
+        isAdmin
       };
+    } else {
+      existingUser.isAdmin = isAdmin;
     }
 
     setUser(existingUser);

@@ -47,9 +47,14 @@ const INITIAL_DATA: Song[] = [
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isPlayerEnabled, setIsPlayerEnabledState] = useState(false);
 
   // Initialize DB and Load Data
   useEffect(() => {
+    const savedPlayerState = localStorage.getItem('willwi_player_enabled');
+    if (savedPlayerState !== null) {
+      setIsPlayerEnabledState(savedPlayerState === 'true');
+    }
     const initData = async () => {
       try {
         // 1. Try to fetch from IndexedDB
@@ -139,8 +144,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const getSong = (id: string) => songs.find(s => s.id === id);
 
+  const setIsPlayerEnabled = (val: boolean) => {
+    setIsPlayerEnabledState(val);
+    localStorage.setItem('willwi_player_enabled', val.toString());
+  };
+
   return (
-    <DataContext.Provider value={{ songs, addSong, updateSong, deleteSong, getSong }}>
+    <DataContext.Provider value={{ songs, addSong, updateSong, deleteSong, getSong, isPlayerEnabled, setIsPlayerEnabled }}>
       {children}
     </DataContext.Provider>
   );

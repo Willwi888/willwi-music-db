@@ -3,12 +3,15 @@ import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import { dbService } from '../services/db';
 import { Song } from '../types';
+import { useUser } from '../context/UserContext';
 
 const AdminDashboard: React.FC = () => {
-  const { songs } = useData();
+  const { songs, isPlayerEnabled, setIsPlayerEnabled } = useData();
+  const { user, login } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
 
   // Project Links provided by user
   const PROJECT_LINKS = {
@@ -102,6 +105,38 @@ const AdminDashboard: React.FC = () => {
       window.open(PROJECT_LINKS.drive, '_blank');
   };
 
+  if (!user?.isAdmin) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+             <div className="text-2xl text-white mb-2 font-bold tracking-widest uppercase">管理員登入</div>
+             <p className="text-slate-400 mb-8 text-sm">限制區域。僅限授權人員進入。</p>
+             
+             <form onSubmit={(e) => { 
+                 e.preventDefault(); 
+                 if (passwordInput === '8888') {
+                     login('admin@willwi.com'); 
+                 } else {
+                     alert('密碼錯誤');
+                 }
+             }} className="space-y-4">
+                 <input 
+                    type="password" 
+                    placeholder="請輸入管理員密碼"
+                    className="w-full bg-black border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-brand-accent outline-none text-center tracking-widest font-mono text-sm"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    required
+                 />
+                 <button type="submit" className="w-full py-3 bg-brand-accent hover:bg-sky-400 text-slate-900 font-bold rounded-lg transition-colors uppercase tracking-widest text-xs">
+                     訪問後端
+                 </button>
+             </form>
+         </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -186,9 +221,20 @@ const AdminDashboard: React.FC = () => {
 
              {/* 2. INFRASTRUCTURE & DEPLOYMENT */}
              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                     Project Infrastructure
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                         Project Infrastructure
+                    </h2>
+                    <div className="flex items-center gap-3 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Public Player</span>
+                        <button 
+                            onClick={() => setIsPlayerEnabled(!isPlayerEnabled)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${isPlayerEnabled ? 'bg-green-500' : 'bg-slate-700'}`}
+                        >
+                            <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isPlayerEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <a 
                         href={PROJECT_LINKS.live} 

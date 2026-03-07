@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { useUser } from '../context/UserContext';
 import { Song, Language, ProjectType, getLanguageColor } from '../types';
 import { generateMusicCritique } from '../services/geminiService';
 import { searchSpotifyTracks, getSpotifyAlbum, SpotifyTrack } from '../services/spotifyService';
@@ -23,7 +24,8 @@ const cleanGoogleRedirect = (url: string) => {
 const SongDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getSong, updateSong, deleteSong } = useData();
+  const { getSong, updateSong, deleteSong, isPlayerEnabled } = useData();
+  const { user } = useUser();
   const { t } = useTranslation();
   
   const [song, setSong] = useState<Song | undefined>(undefined);
@@ -182,6 +184,8 @@ const SongDetail: React.FC = () => {
   const displayData = isEditing ? { ...song, ...editForm } as Song : song;
   const embedUrl = getYoutubeEmbedUrl(displayData.youtubeUrl);
   const spotifyEmbedId = getSpotifyEmbedId(displayData);
+  
+  const canPlayMusic = isPlayerEnabled || user?.isAdmin;
 
   return (
     <div className="animate-fade-in pb-32">
@@ -293,9 +297,11 @@ const SongDetail: React.FC = () => {
                                         <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 flex flex-wrap items-center gap-3">
                                             {displayData.title}
                                             {displayData.versionLabel && <span className="text-lg md:text-2xl text-slate-400 font-normal border border-slate-700 rounded-lg px-3 py-0.5">{displayData.versionLabel}</span>}
-                                            <button onClick={() => setIsEditing(true)} className="text-slate-500 hover:text-white transition-all hover:scale-110" title="Edit Song">
-                                                ✏️
-                                            </button>
+                                            {user?.isAdmin && (
+                                                <button onClick={() => setIsEditing(true)} className="text-slate-500 hover:text-white transition-all hover:scale-110" title="Edit Song">
+                                                    ✏️
+                                                </button>
+                                            )}
                                         </h1>
                                         <div className="flex flex-wrap items-center gap-2 mb-4">
                                             {displayData.isEditorPick && <span className="px-3 py-1 bg-brand-gold text-slate-900 rounded-full text-[10px] font-black tracking-widest uppercase">EDITOR'S PICK</span>}
@@ -362,34 +368,44 @@ const SongDetail: React.FC = () => {
             <div className="space-y-8">
                 <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl">
                     <h3 className="text-lg font-black text-white mb-6 uppercase tracking-widest border-l-4 border-brand-accent pl-4">{t('detail_player_header')}</h3>
-                    {spotifyEmbedId && (
-                        <div className="mb-6 animate-fade-in shadow-2xl">
-                            <iframe 
-                                style={{borderRadius: '16px'}} 
-                                src={`https://open.spotify.com/embed/track/${spotifyEmbedId}?utm_source=generator&theme=0`} 
-                                width="100%" 
-                                height="152" 
-                                frameBorder="0" 
-                                allowFullScreen 
-                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                                loading="lazy">
-                            </iframe>
-                        </div>
-                    )}
                     
-                    {embedUrl ? (
-                         <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-2xl border border-white/5 mb-6">
-                            <iframe 
-                                className="w-full h-full" 
-                                src={embedUrl} 
-                                title="YouTube video player" 
-                                frameBorder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowFullScreen>
-                            </iframe>
+                    {!canPlayMusic ? (
+                        <div className="p-10 bg-slate-900/50 rounded-2xl text-center text-slate-500 text-xs font-bold uppercase tracking-widest border border-dashed border-slate-700">
+                            <div className="text-2xl mb-2">🔒</div>
+                            Player is currently disabled by administrator
                         </div>
                     ) : (
-                        !isEditing && <div className="p-10 bg-slate-900/50 rounded-2xl text-center text-slate-600 text-xs font-bold uppercase tracking-widest border border-dashed border-slate-700">No Video Available</div>
+                        <>
+                            {spotifyEmbedId && (
+                                <div className="mb-6 animate-fade-in shadow-2xl">
+                                    <iframe 
+                                        style={{borderRadius: '16px'}} 
+                                        src={`https://open.spotify.com/embed/track/${spotifyEmbedId}?utm_source=generator&theme=0`} 
+                                        width="100%" 
+                                        height="152" 
+                                        frameBorder="0" 
+                                        allowFullScreen 
+                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                            )}
+                            
+                            {embedUrl ? (
+                                 <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-2xl border border-white/5 mb-6">
+                                    <iframe 
+                                        className="w-full h-full" 
+                                        src={embedUrl} 
+                                        title="YouTube video player" 
+                                        frameBorder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowFullScreen>
+                                    </iframe>
+                                </div>
+                            ) : (
+                                !isEditing && <div className="p-10 bg-slate-900/50 rounded-2xl text-center text-slate-600 text-xs font-bold uppercase tracking-widest border border-dashed border-slate-700">No Video Available</div>
+                            )}
+                        </>
                     )}
 
                     {isEditing && (
