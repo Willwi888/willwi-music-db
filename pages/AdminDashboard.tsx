@@ -13,7 +13,7 @@ const AdminDashboard: React.FC = () => {
     latestVideoUrl, setLatestVideoUrl,
     countdownTargetDate, setCountdownTargetDate
   } = useData();
-  const { user, login } = useUser();
+  const { user, login, logout } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
@@ -150,9 +150,22 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Manager Dashboard</h1>
             <p className="text-slate-400 text-sm mt-1">Willwi's Legacy Archive & Performance</p>
           </div>
-          <div className="flex items-center gap-2">
-             <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse shadow-[0_0_10px_#38bdf8]"></span>
-             <span className="text-xs text-brand-accent font-mono uppercase font-bold">Virtual Manager: Active</span>
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                 <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse shadow-[0_0_10px_#38bdf8]"></span>
+                 <span className="text-xs text-brand-accent font-mono uppercase font-bold">Virtual Manager: Active</span>
+             </div>
+             <button 
+                onClick={() => {
+                  if (window.confirm('確定要登出嗎？')) {
+                    logout();
+                    window.location.href = '/';
+                  }
+                }}
+                className="text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded transition-colors"
+             >
+                登出 (Logout)
+             </button>
           </div>
       </div>
 

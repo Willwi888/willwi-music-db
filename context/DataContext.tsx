@@ -4,107 +4,41 @@ import { dbService } from '../services/db';
 
 const DataContext = createContext<SongContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'willwi_music_db_v1';
-
-// Initial sample data if DB is completely empty and no local storage found
-const INITIAL_DATA: Song[] = [
-  {
-    id: '1',
-    title: '再愛一次',
-    versionLabel: 'Original',
-    coverUrl: 'https://picsum.photos/id/26/400/400',
-    language: Language.Mandarin,
-    projectType: ProjectType.Indie,
-    releaseDate: '2023-10-15',
-    isEditorPick: true,
-    isrc: 'TW-A01-23-00001',
-    spotifyId: '4uLU6hMCjMI75M1A2tKZBC', 
-    lyrics: "走在 熟悉的街角\n回憶 像是海浪拍打\n每一個呼吸\n都是你的氣息\n再愛一次\n能不能\n再愛一次",
-    description: "一首關於失去與重逢的抒情搖滾。",
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", 
-    musixmatchUrl: "https://www.musixmatch.com/artist/Willwi",
-    youtubeMusicUrl: "https://music.youtube.com/channel/WillwiID",
-    spotifyLink: "https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4",
-    appleMusicLink: "https://music.apple.com/us/artist/willwi/1798471457"
-  },
-  {
-    id: '2',
-    title: '泡麵之歌',
-    coverUrl: 'https://picsum.photos/id/192/400/400',
-    language: Language.Japanese,
-    projectType: ProjectType.PaoMien,
-    releaseDate: '2024-01-20',
-    isEditorPick: false,
-    isrc: 'TW-A01-24-00002',
-    description: "深夜肚子餓時的即興創作。",
-    musixmatchUrl: "https://www.musixmatch.com/artist/Willwi",
-    youtubeMusicUrl: "https://music.youtube.com/channel/WillwiID",
-    spotifyLink: "https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4",
-    appleMusicLink: "https://music.apple.com/us/artist/willwi/1798471457"
-  }
-];
-
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isPlayerEnabled, setIsPlayerEnabledState] = useState(false);
+  const [isPlayerEnabled, setIsPlayerEnabledState] = useState(true);
   const [interactiveOtp, setInteractiveOtpState] = useState('2026');
   const [latestVideoUrl, setLatestVideoUrlState] = useState('');
   const [countdownTargetDate, setCountdownTargetDateState] = useState('');
 
-  // Initialize DB and Load Data
+  // Initialize DB and Load Data from API
   useEffect(() => {
-    const savedPlayerState = localStorage.getItem('willwi_player_enabled');
-    if (savedPlayerState !== null) {
-      setIsPlayerEnabledState(savedPlayerState === 'true');
-    }
-    const savedOtp = localStorage.getItem('willwi_interactive_otp');
-    if (savedOtp) setInteractiveOtpState(savedOtp);
-    
-    const savedVideo = localStorage.getItem('willwi_latest_video');
-    if (savedVideo) setLatestVideoUrlState(savedVideo);
-    
-    const savedCountdown = localStorage.getItem('willwi_countdown_date');
-    if (savedCountdown) setCountdownTargetDateState(savedCountdown);
-
     const initData = async () => {
       try {
-        // 1. Try to fetch from IndexedDB
-        let dbSongs = await dbService.getAllSongs();
+        const res = await fetch('/api/data');
+        if (res.ok) {
+          const data = await res.json();
+          
+          // Load settings
+          if (data.settings) {
+            setIsPlayerEnabledState(data.settings.isPlayerEnabled ?? true);
+            setInteractiveOtpState(data.settings.interactiveOtp || '2026');
+            setLatestVideoUrlState(data.settings.latestVideoUrl || '');
+            setCountdownTargetDateState(data.settings.countdownTargetDate || '');
+          }
 
-        // 2. Check for migration: If DB is empty but LocalStorage has data
-        if (dbSongs.length === 0) {
-           const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-           if (localData) {
-             try {
-               console.log("Migrating data from LocalStorage to IndexedDB...");
-               const parsedLocal: Song[] = JSON.parse(localData);
-               if (parsedLocal.length > 0) {
-                 await dbService.bulkAdd(parsedLocal);
-                 dbSongs = await dbService.getAllSongs();
-                 // Optional: Clear local storage after successful migration
-                 // localStorage.removeItem(LOCAL_STORAGE_KEY); 
-               }
-             } catch (e) {
-               console.error("Migration failed:", e);
-             }
-           } else {
-             // 3. If completely new, load initial sample data
-             console.log("Initializing with sample data...");
-             await dbService.bulkAdd(INITIAL_DATA);
-             dbSongs = INITIAL_DATA;
-           }
-        }
-
-        // Sort by date descending
-        const sorted = dbSongs.sort((a, b) => 
+          // Load songs
+          let dbSongs = data.songs || [];
+          
+          // Sort by date descending
+          const sorted = dbSongs.sort((a: Song, b: Song) => 
             new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
-        );
-        setSongs(sorted);
-      } catch (err) {
-        console.error("Failed to initialize database:", err);
-        // Fallback to memory only if DB fails
-        setSongs(INITIAL_DATA);
+          );
+          setSongs(sorted);
+        }
+      } catch (error) {
+        console.error("Failed to load data from server:", error);
       } finally {
         setIsLoaded(true);
       }
@@ -113,14 +47,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initData();
   }, []);
 
+  const updateServerSettings = async (newSettings: any) => {
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+    } catch (e) {
+      console.error("Failed to update settings", e);
+    }
+  };
+
+  const setIsPlayerEnabled = (enabled: boolean) => {
+    setIsPlayerEnabledState(enabled);
+    updateServerSettings({ isPlayerEnabled: enabled });
+  };
+
+  const setInteractiveOtp = (otp: string) => {
+    setInteractiveOtpState(otp);
+    updateServerSettings({ interactiveOtp: otp });
+  };
+
+  const setLatestVideoUrl = (url: string) => {
+    setLatestVideoUrlState(url);
+    updateServerSettings({ latestVideoUrl: url });
+  };
+
+  const setCountdownTargetDate = (date: string) => {
+    setCountdownTargetDateState(date);
+    updateServerSettings({ countdownTargetDate: date });
+  };
+
   const addSong = async (song: Song): Promise<boolean> => {
     try {
       await dbService.addSong(song);
-      setSongs(prev => [song, ...prev]);
+      setSongs(prev => [song, ...prev].sort((a, b) => 
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+      ));
       return true;
     } catch (e) {
       console.error("DB Add Error:", e);
-      alert("儲存失敗：資料庫寫入錯誤。");
       return false;
     }
   };
@@ -133,11 +100,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updatedSong = { ...currentSong, ...updatedFields };
       await dbService.updateSong(updatedSong);
       
-      setSongs(prev => prev.map(s => s.id === id ? updatedSong : s));
+      setSongs(prev => prev.map(s => s.id === id ? updatedSong : s).sort((a, b) => 
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+      ));
       return true;
     } catch (e) {
       console.error("DB Update Error:", e);
-      alert("更新失敗。");
       return false;
     }
   };
@@ -156,33 +124,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const getSong = (id: string) => songs.find(s => s.id === id);
 
-  const setIsPlayerEnabled = (val: boolean) => {
-    setIsPlayerEnabledState(val);
-    localStorage.setItem('willwi_player_enabled', val.toString());
-  };
-
-  const setInteractiveOtp = (val: string) => {
-    setInteractiveOtpState(val);
-    localStorage.setItem('willwi_interactive_otp', val);
-  };
-
-  const setLatestVideoUrl = (val: string) => {
-    setLatestVideoUrlState(val);
-    localStorage.setItem('willwi_latest_video', val);
-  };
-
-  const setCountdownTargetDate = (val: string) => {
-    setCountdownTargetDateState(val);
-    localStorage.setItem('willwi_countdown_date', val);
-  };
-
   return (
     <DataContext.Provider value={{ 
-      songs, addSong, updateSong, deleteSong, getSong, 
-      isPlayerEnabled, setIsPlayerEnabled,
-      interactiveOtp, setInteractiveOtp,
-      latestVideoUrl, setLatestVideoUrl,
-      countdownTargetDate, setCountdownTargetDate
+      songs, 
+      addSong, 
+      updateSong, 
+      deleteSong, 
+      getSong,
+      isLoaded,
+      isPlayerEnabled,
+      setIsPlayerEnabled,
+      interactiveOtp,
+      setInteractiveOtp,
+      latestVideoUrl,
+      setLatestVideoUrl,
+      countdownTargetDate,
+      setCountdownTargetDate
     }}>
       {children}
     </DataContext.Provider>
