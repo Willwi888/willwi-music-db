@@ -6,7 +6,13 @@ import { Song } from '../types';
 import { useUser } from '../context/UserContext';
 
 const AdminDashboard: React.FC = () => {
-  const { songs, isPlayerEnabled, setIsPlayerEnabled } = useData();
+  const { 
+    songs, 
+    isPlayerEnabled, setIsPlayerEnabled,
+    interactiveOtp, setInteractiveOtp,
+    latestVideoUrl, setLatestVideoUrl,
+    countdownTargetDate, setCountdownTargetDate
+  } = useData();
   const { user, login } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -219,7 +225,49 @@ const AdminDashboard: React.FC = () => {
                  {restoreStatus && <p className="mt-2 text-brand-gold font-mono text-xs text-right">{restoreStatus}</p>}
             </div>
 
-             {/* 2. INFRASTRUCTURE & DEPLOYMENT */}
+             {/* 2. SITE SETTINGS */}
+             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
+                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                     Site Settings
+                </h2>
+                
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-xs text-slate-400 font-bold uppercase tracking-widest">互動工作室一次性密碼 (OTP)</label>
+                        <input 
+                            type="text" 
+                            value={interactiveOtp}
+                            onChange={(e) => setInteractiveOtp(e.target.value)}
+                            className="w-full bg-black border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-brand-accent outline-none font-mono text-sm"
+                            placeholder="例如: 2026"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs text-slate-400 font-bold uppercase tracking-widest">最新作品 YouTube 連結 (首頁顯示)</label>
+                        <input 
+                            type="text" 
+                            value={latestVideoUrl}
+                            onChange={(e) => setLatestVideoUrl(e.target.value)}
+                            className="w-full bg-black border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-brand-accent outline-none font-mono text-sm"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs text-slate-400 font-bold uppercase tracking-widest">新作品倒數計時目標時間</label>
+                        <input 
+                            type="datetime-local" 
+                            value={countdownTargetDate}
+                            onChange={(e) => setCountdownTargetDate(e.target.value)}
+                            className="w-full bg-black border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-brand-accent outline-none font-mono text-sm"
+                        />
+                        <p className="text-xs text-slate-500">留空則不顯示倒數計時器。</p>
+                    </div>
+                </div>
+             </div>
+
+             {/* 3. INFRASTRUCTURE & DEPLOYMENT */}
              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">

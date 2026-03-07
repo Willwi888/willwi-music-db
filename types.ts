@@ -70,6 +70,12 @@ export interface SongContextType {
   getSong: (id: string) => Song | undefined;
   isPlayerEnabled: boolean;
   setIsPlayerEnabled: (val: boolean) => void;
+  interactiveOtp: string;
+  setInteractiveOtp: (val: string) => void;
+  latestVideoUrl: string;
+  setLatestVideoUrl: (val: string) => void;
+  countdownTargetDate: string;
+  setCountdownTargetDate: (val: string) => void;
 }
 
 // Helper for UI Colors (Spotify for Artists style)

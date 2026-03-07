@@ -48,6 +48,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlayerEnabled, setIsPlayerEnabledState] = useState(false);
+  const [interactiveOtp, setInteractiveOtpState] = useState('2026');
+  const [latestVideoUrl, setLatestVideoUrlState] = useState('');
+  const [countdownTargetDate, setCountdownTargetDateState] = useState('');
 
   // Initialize DB and Load Data
   useEffect(() => {
@@ -55,6 +58,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (savedPlayerState !== null) {
       setIsPlayerEnabledState(savedPlayerState === 'true');
     }
+    const savedOtp = localStorage.getItem('willwi_interactive_otp');
+    if (savedOtp) setInteractiveOtpState(savedOtp);
+    
+    const savedVideo = localStorage.getItem('willwi_latest_video');
+    if (savedVideo) setLatestVideoUrlState(savedVideo);
+    
+    const savedCountdown = localStorage.getItem('willwi_countdown_date');
+    if (savedCountdown) setCountdownTargetDateState(savedCountdown);
+
     const initData = async () => {
       try {
         // 1. Try to fetch from IndexedDB
@@ -149,8 +161,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('willwi_player_enabled', val.toString());
   };
 
+  const setInteractiveOtp = (val: string) => {
+    setInteractiveOtpState(val);
+    localStorage.setItem('willwi_interactive_otp', val);
+  };
+
+  const setLatestVideoUrl = (val: string) => {
+    setLatestVideoUrlState(val);
+    localStorage.setItem('willwi_latest_video', val);
+  };
+
+  const setCountdownTargetDate = (val: string) => {
+    setCountdownTargetDateState(val);
+    localStorage.setItem('willwi_countdown_date', val);
+  };
+
   return (
-    <DataContext.Provider value={{ songs, addSong, updateSong, deleteSong, getSong, isPlayerEnabled, setIsPlayerEnabled }}>
+    <DataContext.Provider value={{ 
+      songs, addSong, updateSong, deleteSong, getSong, 
+      isPlayerEnabled, setIsPlayerEnabled,
+      interactiveOtp, setInteractiveOtp,
+      latestVideoUrl, setLatestVideoUrl,
+      countdownTargetDate, setCountdownTargetDate
+    }}>
       {children}
     </DataContext.Provider>
   );

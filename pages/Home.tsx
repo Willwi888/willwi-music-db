@@ -3,12 +3,20 @@ import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { getLanguageColor } from '../types';
 import { useTranslation } from '../context/LanguageContext';
+import CountdownTimer from '../components/CountdownTimer';
 
 // Willwi Official Hero Image
 const ARTIST_HERO_IMAGE = "https://p17.zdusercontent.com/attachment/572742/nGBWtmpTNA1gAhYLblesSXoiZ?token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..DuNguqol2WAk3WiKEt2srw.Mbfpe6C7F0kNE5DFsRseRfcLpnmsFIJX6bbXNEIUD8vwVC42QZeqW2_-5mxN3DnaFJZ_jmssgO1yGm440mPn2JGjfN6LCYLEKR3XZl4w9DnHsnClS3IbVUkRZWlmhMaxWj3TI3K6hz-1ZSVYRSLDVZxMLLIzrC5X_6o_4E--8wu1cRwuPTlOef1AEgDS5ynUn4Dy7MS7sgZmhiw3Vcu1jxnIKwdnIZJm1VaZf9_9EXwmxDISSDzzZFp5J3sSW9D1vKO8oM8hzB-CXggM0R44sHQutGNCcKc5pt2F9UZSVfw.1y_aP3hPN5ziOiWi6Kf9hw"; 
 
+const getYoutubeId = (url?: string) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const Home: React.FC = () => {
-  const { songs } = useData();
+  const { songs, latestVideoUrl, countdownTargetDate } = useData();
   const { t } = useTranslation();
   const featured = songs.find(s => s.isEditorPick) || songs[0];
 
@@ -21,19 +29,20 @@ const Home: React.FC = () => {
         <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-16 py-12 lg:py-20 order-2 lg:order-1">
             <div className="max-w-xl mx-auto lg:mx-0">
               <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter uppercase mb-4 drop-shadow-2xl">
-                Willwi
+                WILLWI
               </h1>
               
               <div className="h-1 w-24 bg-brand-accent mb-8 shadow-[0_0_15px_rgba(56,189,248,0.6)]"></div>
               
-              <h2 className="text-3xl md:text-4xl font-bold tracking-widest text-white mb-6 uppercase leading-tight">
-                {t('hero_title')}
+              <h2 className="text-3xl md:text-4xl font-bold tracking-widest text-white mb-6 uppercase leading-tight flex items-center gap-4">
+                威爾維
+                <span className="text-xs border border-brand-accent text-brand-accent px-2 py-1 rounded tracking-widest">資料庫</span>
               </h2>
               
               <p className="text-slate-300 text-lg md:text-xl leading-relaxed mb-12 font-light max-w-lg border-l-2 border-slate-600 pl-6">
-                 Reborn on Feb 25th.
+                 2月25日重生。
                  <br/>
-                 Simply to leave a record of existence.
+                 只是為了留下存在過的痕跡。
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-16">
@@ -41,38 +50,39 @@ const Home: React.FC = () => {
                     to="/database" 
                     className="px-8 py-4 bg-brand-accent text-brand-darker font-black text-center uppercase tracking-widest hover:bg-white hover:scale-105 transition-all shadow-lg shadow-brand-accent/20 rounded-sm"
                 >
-                  {t('hero_btn_db')}
+                  資料庫
                 </Link>
                 <Link 
                     to="/interactive" 
                     className="px-8 py-4 border border-slate-400 text-slate-100 font-bold text-center uppercase tracking-widest hover:border-white hover:text-white hover:bg-white/5 transition-all backdrop-blur-sm rounded-sm"
                 >
-                  {t('hero_btn_interactive')}
+                  互動的
                 </Link>
               </div>
 
-              {/* Featured Song Mini Player */}
-              {featured && (
-                <div className="bg-slate-900/80 backdrop-blur-md p-4 rounded-xl border border-white/10 max-w-md animate-fade-in hover:border-brand-accent/50 transition-colors">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-[10px] font-bold text-brand-accent uppercase tracking-[0.2em]">{t('hero_latest')}</p>
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
-                      <span className={`w-1.5 h-1.5 rounded-full ${getLanguageColor(featured.language)}`}></span>
-                      {featured.language}
-                    </span>
-                  </div>
-                  <Link to={`/song/${featured.id}`} className="flex items-center gap-4 group cursor-pointer">
-                    <div className="relative w-16 h-16 overflow-hidden rounded-lg">
-                       <img src={featured.coverUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="cover" />
+              {/* Countdown Timer */}
+              {countdownTargetDate && (
+                <div className="mb-16">
+                  <h3 className="text-brand-accent text-xs font-bold uppercase tracking-[0.2em] mb-4">NEW RELEASE COUNTDOWN</h3>
+                  <CountdownTimer targetDate={countdownTargetDate} />
+                </div>
+              )}
+
+              {/* Latest Video Embed */}
+              {latestVideoUrl && (
+                <div className="mb-16 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-black/50 max-w-md">
+                    <div className="px-4 py-2 bg-slate-900 border-b border-white/10 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">LATEST VIDEO</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-white group-hover:text-brand-accent transition-colors truncate">{featured.title}</h3>
-                      <p className="text-xs text-slate-400 font-mono">{featured.releaseDate}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full border border-slate-600 flex items-center justify-center text-slate-400 group-hover:border-brand-accent group-hover:text-brand-accent group-hover:bg-brand-accent/10 transition-all">
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                    </div>
-                  </Link>
+                    <iframe 
+                        className="w-full aspect-video" 
+                        src={`https://www.youtube.com/embed/${getYoutubeId(latestVideoUrl)}?controls=1&showinfo=0&rel=0`} 
+                        title="YouTube player" 
+                        frameBorder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowFullScreen>
+                    </iframe>
                 </div>
               )}
             </div>
@@ -128,8 +138,6 @@ const Home: React.FC = () => {
                </h3>
                <p className="text-lg text-slate-400 leading-relaxed">
                  {t('home_purpose_text')}
-                 <br/><br/>
-                 We believe in a fair ecosystem. By offering a "First Song Free, then 80 NTD" model for our interactive studio, we ensure that digital tools support rather than devalue the music industry. It's not about profit; it's about setting a standard of value for every creator.
                </p>
                <div className="pt-8 border-t border-slate-800">
                   <blockquote className="text-xl md:text-2xl font-serif italic text-white mb-4">

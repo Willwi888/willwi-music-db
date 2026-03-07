@@ -45,6 +45,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <Link to="/interactive" className={`${location.pathname === '/interactive' ? 'text-brand-gold font-bold' : 'text-slate-400 hover:text-brand-gold transition-colors font-medium'}`}>
                   {t('nav_interactive')}
                 </Link>
+                <Link to="/admin" className={`${location.pathname === '/admin' ? 'text-brand-accent font-bold' : 'text-slate-400 hover:text-white transition-colors font-medium'}`}>
+                  Manager
+                </Link>
                 {user?.isAdmin && (
                   <Link to="/add" className="px-4 py-1.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-brand-accent hover:text-brand-darker hover:border-brand-accent transition-all text-sm font-bold tracking-wide">
                     + {t('nav_add')}
@@ -98,6 +101,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link to="/" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/')}>{t('nav_home')}</Link>
               <Link to="/database" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/database')}>{t('nav_catalog')}</Link>
               <Link to="/interactive" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/interactive')}>{t('nav_interactive')}</Link>
+              <Link to="/admin" onClick={() => setIsMenuOpen(false)} className={mobileLinkClass('/admin')}>Manager</Link>
               {user?.isAdmin && (
                 <Link to="/add" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-brand-darker bg-brand-accent mt-4 text-center">
                   + {t('nav_add')}
@@ -116,49 +120,34 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
 
       <footer className="bg-brand-darker border-t border-slate-800 mt-auto">
-        <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           
-          <div className="flex flex-col gap-3">
-            <div className="text-slate-500 text-xs tracking-[0.2em] uppercase font-bold">
+          <div className="flex flex-col gap-2">
+            <div className="text-slate-600 text-[10px] tracking-[0.2em] uppercase font-bold">
               © {new Date().getFullYear()} {t('footer_rights')}
             </div>
-            <a href="mailto:will@willwi.com" className="text-slate-400 hover:text-brand-accent text-sm font-mono transition-colors flex items-center gap-2">
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <a href="mailto:will@willwi.com" className="text-slate-500 hover:text-brand-accent text-xs font-mono transition-colors flex items-center gap-2">
+               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                will@willwi.com
             </a>
           </div>
 
-          <div className="flex flex-col items-start md:items-end gap-5 w-full md:w-auto">
-              
-              {/* Socials Group */}
-              <div className="flex flex-wrap gap-4 text-xs tracking-widest uppercase font-semibold text-slate-400">
-                  <a href="https://www.facebook.com/Willwi888" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors flex items-center gap-1">
-                    <span>Facebook</span>
-                  </a>
-                  <a href="https://www.instagram.com/willwi888" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors flex items-center gap-1">
-                    <span>Instagram</span>
-                  </a>
-                  <a href="https://x.com/Willwi888" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors flex items-center gap-1">
-                    <span>X (Twitter)</span>
-                  </a>
-              </div>
-
+          <div className="flex flex-col items-start md:items-end gap-4 w-full md:w-auto">
               {/* Music Platforms & DB Group */}
-              <div className="flex flex-wrap gap-x-6 gap-y-3 justify-start md:justify-end text-xs tracking-widest uppercase font-semibold text-slate-500 border-t border-slate-800 pt-4 md:border-none md:pt-0">
+              <div className="flex flex-wrap gap-x-4 gap-y-2 justify-start md:justify-end text-[10px] tracking-widest uppercase font-semibold text-slate-600 border-t border-slate-800 pt-4 md:border-none md:pt-0">
                 <a href="https://music.amazon.com/artists/B0DYFC8CTG/willwi" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Amazon Music</a>
                 <a href="https://music.apple.com/us/artist/willwi/1798471457" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Apple Music</a>
                 <a href="https://open.spotify.com/artist/3ascZ8Rb2KDw4QyCy29Om4" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Spotify</a>
                 <a href="https://tidal.com/artist/54856609" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">TIDAL</a>
                 <a href="https://www.youtube.com/@Willwi888" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">YouTube</a>
-                <span className="hidden md:inline text-slate-700">|</span>
+                <span className="hidden md:inline text-slate-800">|</span>
                 <a href="https://musicbrainz.org/artist/526cc0f8-da20-4d2d-86a5-4bf841a6ba3c" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">MusicBrainz</a>
                 <a href="https://www.musixmatch.com/artist/Willwi" target="_blank" rel="noreferrer" className="hover:text-brand-accent transition-colors">Musixmatch</a>
-                <Link to="/admin" className="hover:text-white transition-colors text-slate-700">Admin</Link>
               </div>
           </div>
         </div>
         <div className="bg-black py-2 text-center">
-            <p className="text-[10px] text-slate-800 font-mono tracking-widest uppercase">Powered by Willwi & Gemini</p>
+            <p className="text-[9px] text-slate-800 font-mono tracking-widest uppercase">Powered by Willwi & Gemini</p>
         </div>
       </footer>
     </div>

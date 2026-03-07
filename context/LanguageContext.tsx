@@ -112,7 +112,7 @@ const TRANSLATIONS = {
     footer_rights: "Willwi Music. 版權所有",
 
     // Home
-    hero_title: "WILLWI MUSIC CATALOG.",
+    hero_title: "WILLWI 官方音樂資料中心。",
     hero_subtitle: "Because every note deserves a place to belong.", 
     hero_btn_db: "資料庫",
     hero_btn_interactive: "互動專區",

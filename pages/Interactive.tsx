@@ -7,6 +7,7 @@ import PaymentModal from '../components/PaymentModal';
 import { motion, AnimatePresence } from 'motion/react';
 
 type GameState = 'intro' | 'pre-start' | 'playing' | 'finished';
+type GatewayStep = 'options' | 'contact' | 'otp' | 'payment' | 'unlocked';
 
 interface SyncPoint {
   time: number;
@@ -20,8 +21,15 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 };
 
+const getYoutubeId = (url?: string) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const Interactive: React.FC = () => {
-  const { songs } = useData();
+  const { songs, interactiveOtp: correctOtp } = useData();
   const { user, deductCredit } = useUser();
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -33,6 +41,50 @@ const Interactive: React.FC = () => {
   const [lineIndex, setLineIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [syncData, setSyncData] = useState<SyncPoint[]>([]);
+  
+  // Style options
+  const [fontFamily, setFontFamily] = useState('font-serif');
+  const [textAlign, setTextAlign] = useState('text-left');
+  const [fontSize, setFontSize] = useState('text-4xl md:text-5xl');
+
+  // Gateway State
+  const [gatewayStep, setGatewayStep] = useState<GatewayStep>('options');
+  const [selectedOption, setSelectedOption] = useState<'100' | '320' | '2800' | null>(null);
+  const [otp, setOtp] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
+
+  const handleOptionSelect = (option: '100' | '320' | '2800') => {
+    setSelectedOption(option);
+    setGatewayStep('contact');
+  };
+
+  const handleContactSubmit = () => {
+    if (!contactInfo.trim()) {
+      alert('請留下聯絡資訊');
+      return;
+    }
+    setGatewayStep('otp');
+  };
+
+  const handleOtpSubmit = () => {
+    if (otp === correctOtp || otp === '8888') {
+      setGatewayStep('payment');
+    } else {
+      alert('密碼錯誤，請輸入正確的一次性密碼');
+    }
+  };
+
+  const handlePaymentComplete = () => {
+    if (selectedOption === '320') {
+      setGatewayStep('unlocked');
+    } else {
+      alert('感謝您的支持！我們將會透過您留下的聯絡資訊與您聯繫。');
+      setGatewayStep('options');
+      setSelectedOption(null);
+      setOtp('');
+      setContactInfo('');
+    }
+  };
   
   const startTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>(0);
@@ -134,17 +186,173 @@ const Interactive: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, lineIndex, elapsedTime]);
 
+  if (gatewayStep !== 'unlocked') {
+    return (
+      <div className="flex-grow bg-[#0a0502] text-[#e0d8d0] font-serif relative overflow-hidden flex flex-col items-center justify-center p-6">
+        {/* Atmospheric Background */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[#3a1510] rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#ff4e00] rounded-full mix-blend-screen filter blur-[120px] opacity-10"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-2xl bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl">
+          <AnimatePresence mode="wait">
+            {gatewayStep === 'options' && (
+              <motion.div key="options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+                <div className="text-center space-y-4">
+                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-widest">互動工作室</h1>
+                  <p className="text-white/60 text-sm md:text-base leading-relaxed">
+                    互動工作室目前為專屬開放。<br/>請選擇您的支持方案以繼續：
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <button onClick={() => handleOptionSelect('100')} className="p-6 border border-white/10 rounded-2xl hover:bg-white/5 hover:border-[#ff4e00]/50 transition-all text-left group">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl font-bold text-white group-hover:text-[#ff4e00] transition-colors">單純支持</h3>
+                      <span className="text-lg font-mono text-[#ff4e00]">$100</span>
+                    </div>
+                    <p className="text-sm text-white/50">給予我們最直接的鼓勵與支持。</p>
+                  </button>
+
+                  <button onClick={() => handleOptionSelect('320')} className="p-6 border border-white/10 rounded-2xl hover:bg-white/5 hover:border-[#ff4e00]/50 transition-all text-left group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-[#ff4e00] text-black text-[10px] font-bold px-3 py-1 rounded-bl-lg tracking-wider">RECOMMENDED</div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl font-bold text-white group-hover:text-[#ff4e00] transition-colors">手工對歌詞</h3>
+                      <span className="text-lg font-mono text-[#ff4e00]">$320</span>
+                    </div>
+                    <p className="text-sm text-white/50">進入互動工作室，親手為歌曲對時。完成後可立即獲得專屬歌詞影片。</p>
+                  </button>
+
+                  <button onClick={() => handleOptionSelect('2800')} className="p-6 border border-white/10 rounded-2xl hover:bg-white/5 hover:border-[#ff4e00]/50 transition-all text-left group">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl font-bold text-white group-hover:text-[#ff4e00] transition-colors">專屬影片製作</h3>
+                      <span className="text-lg font-mono text-[#ff4e00]">$2,800</span>
+                    </div>
+                    <p className="text-sm text-white/50">由我們為您製作專屬歌詞動態影片，完成後將提供雲端連結供您下載。</p>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {gatewayStep === 'contact' && (
+              <motion.div key="contact" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-bold text-white tracking-widest">聯絡資訊與驗證</h2>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    請留下您的聯絡資訊 (Email 或手機)，<br/>或加入官方 LINE@ 獲取一次性密碼 (OTP)。
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <a href="https://lin.ee/y96nuSM" target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-[#00B900] hover:bg-[#009900] text-white text-center rounded-xl font-bold tracking-widest transition-colors shadow-lg shadow-[#00B900]/20">
+                    加入官方 LINE@ (獲取密碼)
+                  </a>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="h-px bg-white/10 flex-1"></div>
+                    <span className="text-white/30 text-xs uppercase tracking-widest">OR</span>
+                    <div className="h-px bg-white/10 flex-1"></div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/50 tracking-widest uppercase">聯絡資訊 (Email / Phone)</label>
+                    <input 
+                      type="text" 
+                      value={contactInfo}
+                      onChange={(e) => setContactInfo(e.target.value)}
+                      className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ff4e00] transition-colors"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={() => setGatewayStep('options')} className="flex-1 py-3 border border-white/20 text-white/70 hover:text-white rounded-xl transition-colors">返回</button>
+                    <button onClick={handleContactSubmit} className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors">下一步</button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {gatewayStep === 'otp' && (
+              <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-bold text-white tracking-widest">輸入一次性密碼</h2>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    請輸入您從官方 LINE@ 獲得的密碼。
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <input 
+                    type="text" 
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] text-white focus:outline-none focus:border-[#ff4e00] transition-colors font-mono"
+                    placeholder="••••"
+                    maxLength={6}
+                  />
+
+                  <div className="flex gap-4 pt-4">
+                    <button onClick={() => setGatewayStep('contact')} className="flex-1 py-3 border border-white/20 text-white/70 hover:text-white rounded-xl transition-colors">返回</button>
+                    <button onClick={handleOtpSubmit} className="flex-1 py-3 bg-[#ff4e00] text-white font-bold rounded-xl hover:bg-[#ff4e00]/90 transition-colors">驗證密碼</button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {gatewayStep === 'payment' && (
+              <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 text-center">
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold text-white tracking-widest">完成付款</h2>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    請點擊下方按鈕前往 PayPal 完成付款。<br/>付款完成後請點擊「我已完成付款」。
+                  </p>
+                </div>
+
+                <div className="py-8">
+                  {selectedOption === '100' && (
+                    <a href="https://www.paypal.com/ncp/payment/UZU4M39WRFN5N" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-4 bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold rounded-full transition-colors shadow-lg">
+                      前往 PayPal 付款 ($100)
+                    </a>
+                  )}
+                  {selectedOption === '320' && (
+                    <a href="https://www.paypal.com/ncp/payment/8NQSNPLPBVS5L" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-4 bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold rounded-full transition-colors shadow-lg">
+                      前往 PayPal 付款 ($320)
+                    </a>
+                  )}
+                  {selectedOption === '2800' && (
+                    <a href="https://www.paypal.com/ncp/payment/CD27A99GZHXV4" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-4 bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold rounded-full transition-colors shadow-lg">
+                      前往 PayPal 付款 ($2,800)
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button onClick={() => setGatewayStep('otp')} className="flex-1 py-3 border border-white/20 text-white/70 hover:text-white rounded-xl transition-colors">上一步</button>
+                  <button onClick={handlePaymentComplete} className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors">我已完成付款</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-grow bg-[#0a0502] text-[#e0d8d0] font-serif selection:bg-[#ff4e00]/30 relative overflow-hidden flex flex-col">
-      {/* Atmospheric Background */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[#3a1510] rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#ff4e00] rounded-full mix-blend-screen filter blur-[120px] opacity-10"></div>
-      </div>
+      {/* Atmospheric Background for non-playing states */}
+      {gameState !== 'playing' && (
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[#3a1510] rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#ff4e00] rounded-full mix-blend-screen filter blur-[120px] opacity-10"></div>
+        </div>
+      )}
 
       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} />
 
-      <div className="relative z-10 flex-grow flex flex-col max-w-4xl mx-auto w-full px-6 py-12 md:py-24">
+      <div className={`relative z-10 flex-grow flex flex-col w-full ${gameState === 'playing' ? 'px-0 py-0' : 'max-w-4xl mx-auto px-6 py-12 md:py-24'}`}>
         <AnimatePresence mode="wait">
           
           {/* 1. Intro View */}
@@ -232,21 +440,59 @@ const Interactive: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1 }}
-              className="flex flex-col flex-grow relative"
+              className="flex flex-col flex-grow relative w-full h-full min-h-[80vh]"
             >
-              <div className="absolute top-0 left-0 w-full flex justify-between items-center text-white/30 font-sans text-xs tracking-widest">
-                <button onClick={resetGame} className="hover:text-white transition-colors">← 離開</button>
-                <div className="font-mono">{formatTime(elapsedTime)}</div>
-              </div>
+              {/* Blurred Background */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center z-0 opacity-40 blur-3xl scale-110"
+                style={{ backgroundImage: `url(${selectedSong?.coverUrl})` }}
+              />
+              <div className="absolute inset-0 bg-black/60 z-0" />
 
-              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-16 mt-12">
-                <div className="text-white/40 text-sm md:text-base font-light tracking-wide max-w-md">
-                  <p>你不需要急這首歌不會走。</p>
-                  <p>跟著它在你覺得「對了」的時候，輕輕按下空白鍵結束放開。</p>
-                  <p>每一行歌詞，都是你親手放上去的。</p>
+              {/* Top Bar with Options */}
+              <div className="absolute top-0 left-0 w-full flex justify-between items-center p-6 z-20 text-white/50 font-sans text-xs tracking-widest bg-gradient-to-b from-black/80 to-transparent">
+                <button onClick={resetGame} className="hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-full bg-black/30 backdrop-blur-md">← 離開</button>
+                
+                <div className="flex items-center gap-4 bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                  <select 
+                    value={fontFamily} 
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className="bg-transparent text-white outline-none cursor-pointer"
+                  >
+                    <option value="font-sans" className="text-black">Sans-serif (無襯線)</option>
+                    <option value="font-serif" className="text-black">Serif (襯線體)</option>
+                    <option value="font-mono" className="text-black">Monospace (等寬)</option>
+                  </select>
+                  <div className="w-px h-4 bg-white/20"></div>
+                  <select 
+                    value={textAlign} 
+                    onChange={(e) => setTextAlign(e.target.value)}
+                    className="bg-transparent text-white outline-none cursor-pointer"
+                  >
+                    <option value="text-left" className="text-black">靠左</option>
+                    <option value="text-center" className="text-black">置中</option>
+                    <option value="text-right" className="text-black">靠右</option>
+                  </select>
+                  <div className="w-px h-4 bg-white/20"></div>
+                  <select 
+                    value={fontSize} 
+                    onChange={(e) => setFontSize(e.target.value)}
+                    className="bg-transparent text-white outline-none cursor-pointer"
+                  >
+                    <option value="text-2xl md:text-3xl" className="text-black">小</option>
+                    <option value="text-4xl md:text-5xl" className="text-black">中</option>
+                    <option value="text-6xl md:text-7xl" className="text-black">大</option>
+                  </select>
                 </div>
 
-                <div className="w-full max-w-2xl relative h-40 flex items-center justify-center">
+                <div className="font-mono bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">{formatTime(elapsedTime)}</div>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="relative z-10 flex-grow flex flex-col md:flex-row items-center justify-center p-8 md:p-16 gap-12 md:gap-24">
+                
+                {/* Left: Lyrics */}
+                <div className={`flex-1 flex flex-col justify-center ${textAlign} w-full`}>
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={lineIndex}
@@ -254,19 +500,61 @@ const Interactive: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.5 }}
-                      className="text-3xl md:text-4xl font-medium text-white leading-relaxed"
+                      className={`${fontFamily} ${fontSize} font-bold text-white leading-tight drop-shadow-2xl`}
                     >
-                      {selectedSong?.lyrics?.split('\n').filter(l => l.trim() !== '')[lineIndex]}
+                      {selectedSong?.lyrics?.split('\n').filter(l => l.trim() !== '')[lineIndex] || "End"}
                     </motion.div>
                   </AnimatePresence>
                 </div>
 
-                <button 
-                  onClick={handleSync}
-                  className="w-24 h-24 rounded-full border border-white/20 flex items-center justify-center text-white/30 hover:text-white hover:border-white/60 hover:bg-white/5 transition-all duration-300 font-sans text-xs tracking-widest active:scale-95 active:bg-white/20"
-                >
-                  SPACE
-                </button>
+                {/* Right: Album Art & Player */}
+                <div className="w-full md:w-[320px] flex flex-col items-center gap-6 shrink-0">
+                  <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                    <img src={selectedSong?.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                  </div>
+                  
+                  <div className="text-center w-full">
+                    <h3 className="text-xl font-bold text-white truncate">{selectedSong?.title}</h3>
+                    <p className="text-white/60 text-sm mt-1">Willwi</p>
+                  </div>
+
+                  {/* Player Embed */}
+                  <div className="w-full space-y-4">
+                    {selectedSong?.youtubeUrl && (
+                      <div className="w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-black/50">
+                        <iframe 
+                            className="w-full h-[100px]" 
+                            src={`https://www.youtube.com/embed/${getYoutubeId(selectedSong.youtubeUrl)}?controls=1&showinfo=0&rel=0`} 
+                            title="YouTube player" 
+                            frameBorder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen>
+                        </iframe>
+                      </div>
+                    )}
+                    {!selectedSong?.youtubeUrl && selectedSong?.spotifyId && (
+                       <div className="w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-black/50">
+                          <iframe 
+                              src={`https://open.spotify.com/embed/track/${selectedSong.spotifyId}?utm_source=generator&theme=0`} 
+                              width="100%" 
+                              height="80" 
+                              frameBorder="0" 
+                              allowFullScreen 
+                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                              loading="lazy">
+                          </iframe>
+                       </div>
+                    )}
+                    
+                    <button 
+                      onClick={handleSync}
+                      className="w-full py-4 rounded-xl border border-white/20 bg-white/5 text-white/70 hover:text-white hover:border-white/60 hover:bg-white/10 transition-all duration-300 font-sans text-sm font-bold tracking-widest active:scale-95 shadow-lg backdrop-blur-sm"
+                    >
+                      同步 (SPACE)
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </motion.div>
           )}
