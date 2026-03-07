@@ -38,6 +38,7 @@ export interface Song {
   youtubeMusicUrl?: string;
   spotifyLink?: string; // Direct link
   appleMusicLink?: string;
+  audioUrl?: string; // Direct audio file link for playback
   
   // Content
   lyrics?: string;

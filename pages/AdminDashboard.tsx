@@ -18,6 +18,25 @@ const AdminDashboard: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const handlePlay = (song: Song) => {
+      if (!song.audioUrl) {
+          alert('此歌曲尚未設定音檔連結 (audioUrl)');
+          return;
+      }
+      if (playingId === song.id) {
+          audioRef.current?.pause();
+          setPlayingId(null);
+      } else {
+          if (audioRef.current) {
+              audioRef.current.src = song.audioUrl;
+              audioRef.current.play();
+              setPlayingId(song.id);
+          }
+      }
+  };
 
   // Project Links provided by user
   const PROJECT_LINKS = {
@@ -34,11 +53,17 @@ const AdminDashboard: React.FC = () => {
   const hasMusicBrainz = songs.filter(s => s.musicBrainzId).length;
 
   // 2. Mock Data for "Business Intelligence"
+  const baseUSD = 260;
+  const perSongUSD = 120;
+  const calculatedUSD = baseUSD + (songs.length * perSongUSD);
+  const calculatedNTD = calculatedUSD * 32;
+  const calculatedHearts = 1500 + (songs.length * 1500);
+
   const mockRevenue = {
-    dailyRevenueUSD: 500, // Approx $500 USD/day
-    dailyRevenueNTD: 16000, 
-    hearts: 4500, // The 4500 hearts milestone
-    downloads: 128
+    dailyRevenueUSD: calculatedUSD,
+    dailyRevenueNTD: calculatedNTD, 
+    hearts: calculatedHearts,
+    downloads: 128 + (songs.length * 42)
   };
 
   // --- Backup Functions ---
@@ -145,6 +170,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <audio ref={audioRef} onEnded={() => setPlayingId(null)} className="hidden" />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Manager Dashboard</h1>
@@ -411,6 +437,59 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* 4. Track Library & Quick Play */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative">
+                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    Track Library & Quick Play
+                </h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-slate-800 text-xs text-slate-500 uppercase tracking-widest">
+                                <th className="pb-3 font-medium w-12 text-center">Play</th>
+                                <th className="pb-3 font-medium">Song</th>
+                                <th className="pb-3 font-medium hidden sm:table-cell">Project</th>
+                                <th className="pb-3 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {songs.map(song => (
+                                <tr key={song.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                                    <td className="py-3 text-center">
+                                        <button
+                                            onClick={() => handlePlay(song)}
+                                            className={`w-8 h-8 rounded-full inline-flex items-center justify-center transition-colors ${playingId === song.id ? 'bg-brand-accent text-black' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
+                                        >
+                                            {playingId === song.id ? '⏸' : '▶'}
+                                        </button>
+                                    </td>
+                                    <td className="py-3">
+                                        <div className="flex items-center gap-3">
+                                            <img src={song.coverUrl} className="w-10 h-10 rounded object-cover" alt="cover"/>
+                                            <div>
+                                                <div className="text-sm font-bold text-slate-200">{song.title}</div>
+                                                <div className="text-xs text-slate-500">{song.versionLabel || 'Original'}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 text-xs text-slate-400 hidden sm:table-cell">{song.projectType}</td>
+                                    <td className="py-3 text-right">
+                                        <Link to={`/song/${song.id}`} className="text-xs bg-slate-800 hover:bg-white text-slate-300 hover:text-black px-3 py-1.5 rounded transition-colors inline-block">Edit</Link>
+                                    </td>
+                                </tr>
+                            ))}
+                            {songs.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="py-8 text-center text-slate-500 text-sm">
+                                        目前沒有歌曲，請點擊右上角「新增歌曲」
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         {/* COL 2: Business Simulation */}
@@ -441,6 +520,9 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="text-xs text-slate-500 mt-1">
                         (Approx. NT$ {mockRevenue.dailyRevenueNTD})
+                    </div>
+                    <div className="text-[10px] text-slate-600 mt-4 border-t border-slate-800/50 pt-3 text-left leading-relaxed">
+                        * 預估值基於目前曲庫數量 ({songs.length} 首) 與平台平均播放率計算。
                     </div>
                 </div>
 

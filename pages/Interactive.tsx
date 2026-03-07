@@ -52,6 +52,13 @@ const Interactive: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<'100' | '320' | '2800' | null>(null);
   const [otp, setOtp] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      setGatewayStep('unlocked');
+    }
+  }, [user]);
 
   const handleOptionSelect = (option: '100' | '320' | '2800') => {
     setSelectedOption(option);
@@ -88,6 +95,7 @@ const Interactive: React.FC = () => {
   
   const startTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleSelectSong = (song: Song) => {
     setSelectedSong(song);
@@ -102,10 +110,19 @@ const Interactive: React.FC = () => {
     setGameState('playing');
     startTimeRef.current = Date.now();
     
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.error("Audio play failed", e));
+    }
+
     const loop = () => {
-      const now = Date.now();
-      const delta = (now - startTimeRef.current) / 1000;
-      setElapsedTime(delta);
+      if (audioRef.current && !audioRef.current.paused) {
+        setElapsedTime(audioRef.current.currentTime);
+      } else {
+        const now = Date.now();
+        const delta = (now - startTimeRef.current) / 1000;
+        setElapsedTime(delta);
+      }
       animationFrameRef.current = requestAnimationFrame(loop);
     };
     loop();
@@ -129,11 +146,13 @@ const Interactive: React.FC = () => {
 
   const finishGame = () => {
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (audioRef.current) audioRef.current.pause();
     setGameState('finished');
   };
 
   const resetGame = () => {
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (audioRef.current) audioRef.current.pause();
     setGameState('intro');
     setSelectedSong(null);
     setLineIndex(0);
@@ -148,7 +167,12 @@ const Interactive: React.FC = () => {
       }
 
       if (deductCredit()) {
-          downloadSrt();
+          setIsExporting(true);
+          setTimeout(() => {
+              setIsExporting(false);
+              downloadSrt();
+              alert("影片渲染功能需要後端伺服器支援，目前為您導出精準對時的 SRT 字幕檔，您可將其與音檔結合。");
+          }, 3000);
       } else {
           setShowPaymentModal(true);
       }
@@ -156,13 +180,19 @@ const Interactive: React.FC = () => {
 
   const downloadSrt = () => {
     if (!selectedSong) return;
-    let srtContent = "";
+    
+    let srtContent = `1\n00:00:00,000 --> 00:00:05,000\nSong: ${selectedSong.title}\nArtist: Willwi\nPublisher: Willwi Music\n`;
+    if (selectedSong.isrc) {
+        srtContent += `ISRC: ${selectedSong.isrc}\n`;
+    }
+    srtContent += `\n`;
+    
     syncData.forEach((item, index) => {
         const start = new Date(item.time * 1000).toISOString().substr(11, 12).replace('.', ',');
         const nextTimeVal = (index < syncData.length - 1) ? syncData[index+1].time : item.time + 3;
         const end = new Date(nextTimeVal * 1000).toISOString().substr(11, 12).replace('.', ',');
         
-        srtContent += `${index + 1}\n${start} --> ${end}\n${item.text}\n\n`;
+        srtContent += `${index + 2}\n${start} --> ${end}\n${item.text}\n\n`;
     });
 
     const blob = new Blob([srtContent], { type: 'text/plain' });
@@ -440,121 +470,87 @@ const Interactive: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1 }}
-              className="flex flex-col flex-grow relative w-full h-full min-h-[80vh]"
+              className="fixed inset-0 z-50 flex flex-col bg-[#0a0502] font-serif"
             >
+              {/* Audio Element */}
+              {selectedSong?.audioUrl && (
+                <audio ref={audioRef} src={selectedSong.audioUrl} onEnded={finishGame} />
+              )}
+
               {/* Blurred Background */}
               <div 
-                className="absolute inset-0 bg-cover bg-center z-0 opacity-40 blur-3xl scale-110"
+                className="absolute inset-0 bg-cover bg-center z-0 opacity-30 blur-2xl scale-110"
                 style={{ backgroundImage: `url(${selectedSong?.coverUrl})` }}
               />
-              <div className="absolute inset-0 bg-black/60 z-0" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent z-0" />
 
-              {/* Top Bar with Options */}
-              <div className="absolute top-0 left-0 w-full flex justify-between items-center p-6 z-20 text-white/50 font-sans text-xs tracking-widest bg-gradient-to-b from-black/80 to-transparent">
-                <button onClick={resetGame} className="hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-full bg-black/30 backdrop-blur-md">← 離開</button>
-                
-                <div className="flex items-center gap-4 bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-                  <select 
-                    value={fontFamily} 
-                    onChange={(e) => setFontFamily(e.target.value)}
-                    className="bg-transparent text-white outline-none cursor-pointer"
-                  >
-                    <option value="font-sans" className="text-black">Sans-serif (無襯線)</option>
-                    <option value="font-serif" className="text-black">Serif (襯線體)</option>
-                    <option value="font-mono" className="text-black">Monospace (等寬)</option>
-                  </select>
-                  <div className="w-px h-4 bg-white/20"></div>
-                  <select 
-                    value={textAlign} 
-                    onChange={(e) => setTextAlign(e.target.value)}
-                    className="bg-transparent text-white outline-none cursor-pointer"
-                  >
-                    <option value="text-left" className="text-black">靠左</option>
-                    <option value="text-center" className="text-black">置中</option>
-                    <option value="text-right" className="text-black">靠右</option>
-                  </select>
-                  <div className="w-px h-4 bg-white/20"></div>
-                  <select 
-                    value={fontSize} 
-                    onChange={(e) => setFontSize(e.target.value)}
-                    className="bg-transparent text-white outline-none cursor-pointer"
-                  >
-                    <option value="text-2xl md:text-3xl" className="text-black">小</option>
-                    <option value="text-4xl md:text-5xl" className="text-black">中</option>
-                    <option value="text-6xl md:text-7xl" className="text-black">大</option>
-                  </select>
-                </div>
-
-                <div className="font-mono bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">{formatTime(elapsedTime)}</div>
+              {/* Top Bar */}
+              <div className="absolute top-0 left-0 w-full flex justify-between items-center p-8 z-20">
+                <button onClick={resetGame} className="text-white/50 hover:text-white transition-colors text-sm tracking-widest flex items-center gap-2">
+                  <span>←</span> 離開工作室
+                </button>
+                <div className="font-mono text-white/50 tracking-widest text-lg">{formatTime(elapsedTime)}</div>
               </div>
 
               {/* Main Content Area */}
-              <div className="relative z-10 flex-grow flex flex-col md:flex-row items-center justify-center p-8 md:p-16 gap-12 md:gap-24">
+              <div className="relative z-10 flex-grow flex items-center justify-between px-12 md:px-32">
                 
                 {/* Left: Lyrics */}
-                <div className={`flex-1 flex flex-col justify-center ${textAlign} w-full`}>
+                <div className="flex-1 pr-12">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={lineIndex}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.5 }}
-                      className={`${fontFamily} ${fontSize} font-bold text-white leading-tight drop-shadow-2xl`}
+                      initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-2xl tracking-wide"
                     >
                       {selectedSong?.lyrics?.split('\n').filter(l => l.trim() !== '')[lineIndex] || "End"}
                     </motion.div>
                   </AnimatePresence>
                 </div>
 
-                {/* Right: Album Art & Player */}
-                <div className="w-full md:w-[320px] flex flex-col items-center gap-6 shrink-0">
-                  <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                {/* Right: Album Art & Info */}
+                <div className="w-[280px] md:w-[400px] shrink-0 flex flex-col items-end">
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="w-full aspect-square rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10"
+                  >
                     <img src={selectedSong?.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-                  </div>
-                  
-                  <div className="text-center w-full">
-                    <h3 className="text-xl font-bold text-white truncate">{selectedSong?.title}</h3>
-                    <p className="text-white/60 text-sm mt-1">Willwi</p>
-                  </div>
-
-                  {/* Player Embed */}
-                  <div className="w-full space-y-4">
-                    {selectedSong?.youtubeUrl && (
-                      <div className="w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-black/50">
-                        <iframe 
-                            className="w-full h-[100px]" 
-                            src={`https://www.youtube.com/embed/${getYoutubeId(selectedSong.youtubeUrl)}?controls=1&showinfo=0&rel=0`} 
-                            title="YouTube player" 
-                            frameBorder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowFullScreen>
-                        </iframe>
-                      </div>
-                    )}
-                    {!selectedSong?.youtubeUrl && selectedSong?.spotifyId && (
-                       <div className="w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-black/50">
-                          <iframe 
-                              src={`https://open.spotify.com/embed/track/${selectedSong.spotifyId}?utm_source=generator&theme=0`} 
-                              width="100%" 
-                              height="80" 
-                              frameBorder="0" 
-                              allowFullScreen 
-                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                              loading="lazy">
-                          </iframe>
-                       </div>
-                    )}
-                    
-                    <button 
-                      onClick={handleSync}
-                      className="w-full py-4 rounded-xl border border-white/20 bg-white/5 text-white/70 hover:text-white hover:border-white/60 hover:bg-white/10 transition-all duration-300 font-sans text-sm font-bold tracking-widest active:scale-95 shadow-lg backdrop-blur-sm"
-                    >
-                      同步 (SPACE)
-                    </button>
-                  </div>
+                  </motion.div>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5, duration: 1 }}
+                    className="mt-8 text-right space-y-1"
+                  >
+                    <h3 className="text-2xl md:text-3xl font-bold text-white tracking-widest drop-shadow-lg">{selectedSong?.title}</h3>
+                    <p className="text-white/80 text-lg tracking-[0.2em] drop-shadow-md">Willwi</p>
+                    <p className="text-white/40 text-xs tracking-[0.2em] uppercase mt-2">Willwi Music</p>
+                  </motion.div>
                 </div>
 
+              </div>
+
+              {/* Bottom Progress / Sync Instruction */}
+              <div className="absolute bottom-0 left-0 w-full p-12 z-20 flex flex-col items-center">
+                <div className="text-white/40 text-xs tracking-[0.3em] uppercase mb-6 animate-pulse">
+                  按下空白鍵 (SPACE) 同步下一句歌詞
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full max-w-5xl h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-white/80 transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                    style={{ 
+                      width: audioRef.current?.duration 
+                        ? `${(elapsedTime / audioRef.current.duration) * 100}%` 
+                        : `${Math.min((lineIndex / (selectedSong?.lyrics?.split('\n').filter(l => l.trim() !== '').length || 1)) * 100, 100)}%` 
+                    }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -600,9 +596,10 @@ const Interactive: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button 
                     onClick={handleDownloadClick}
-                    className="px-8 py-4 bg-white text-black rounded-full font-sans tracking-widest text-sm hover:bg-white/90 transition-colors"
+                    disabled={isExporting}
+                    className="px-8 py-4 bg-white text-black rounded-full font-sans tracking-widest text-sm hover:bg-white/90 transition-colors disabled:opacity-50"
                   >
-                    下載你的紀錄 (.SRT)
+                    {isExporting ? '影片渲染中...' : '導出專屬影片 (MP4)'}
                   </button>
                   <button 
                     onClick={resetGame}

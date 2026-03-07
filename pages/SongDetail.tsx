@@ -430,7 +430,8 @@ const SongDetail: React.FC = () => {
                                 {label: t('form_label_apple'), field: 'appleMusicLink'},
                                 {label: 'Musixmatch URL', field: 'musixmatchUrl'},
                                 {label: 'YouTube Music URL', field: 'youtubeMusicUrl'},
-                                {label: 'MusicBrainz ID', field: 'musicBrainzId'}
+                                {label: 'MusicBrainz ID', field: 'musicBrainzId'},
+                                {label: 'Direct Audio URL (MP3/WAV)', field: 'audioUrl'}
                             ].map(item => (
                                 <div key={item.field}>
                                     <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">{item.label}</label>
