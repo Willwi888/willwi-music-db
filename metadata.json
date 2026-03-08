@@ -1,0 +1,5 @@
+{
+  "name": "Willwi AI DJ",
+  "description": "AI-powered dynamic lyrics video studio for Willwi. Sync lyrics, generate highlights, and create MV clips with Gemini.",
+  "requestFramePermissions": ["microphone"]
+}
